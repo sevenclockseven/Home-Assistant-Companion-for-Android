@@ -1,0 +1,47 @@
+name: Build and Release apk
+
+on:
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build with Gradle
+        run: chmod +x gradlew && ./gradlew aR
+        env:
+          NESTOR_KEYSTORE_ALIAS: ${{ secrets.NESTOR_KEYSTORE_ALIAS }}
+          NESTOR_KEYSTORE_PASSWORD: ${{ secrets.NESTOR_KEYSTORE_PASSWORD }}
+          VERSION_CODE: ${{ github.run_number }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: "**/release/*.apk"
+          if-no-files-found: error
+
+      - name: Release apk
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "**/release/*.apk"
+          token: ${{ secrets.GITHUB_TOKEN }}
