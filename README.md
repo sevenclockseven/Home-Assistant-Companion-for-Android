@@ -1,9 +1,9 @@
 # Home Assistant官方app适配国内环境版! 
-[![version](https://img.shields.io/github/v/release/nesror/Home-Assistant-Companion-for-Android?display_name=tag)](https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/latest)
-[![stars](https://img.shields.io/github/stars/nesror/Home-Assistant-Companion-for-Android)](https://github.com/nesror/Home-Assistant-Companion-for-Android/stargazers)
-[![issues](https://img.shields.io/github/issues/nesror/Home-Assistant-Companion-for-Android)](https://github.com/nesror/Home-Assistant-Companion-for-Android/issues)
-![visit](https://visitor-badge.glitch.me/badge?page_id=nesror.Home-Assistant-Companion-for-Android&left_text=visit)
-[![Build and Release apk](https://github.com/nesror/android/workflows/Build%20and%20Release%20apk/badge.svg)](https://github.com/nesror/Home-Assistant-Companion-for-Android/actions/workflows/main.yml)
+[![version](https://img.shields.io/github/v/release/sevenclockseven/Home-Assistant-Companion-for-Android?display_name=tag)](https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android/releases/latest)
+[![stars](https://img.shields.io/github/stars/sevenclockseven/Home-Assistant-Companion-for-Android)](https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android/stargazers)
+[![issues](https://img.shields.io/github/issues/sevenclockseven/Home-Assistant-Companion-for-Android)](https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android/issues)
+![visit](https://visitor-badge.glitch.me/badge?page_id=sevenclockseven.Home-Assistant-Companion-for-Android&left_text=visit)
+[![Build and Release apk](https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android/workflows/Build%20and%20Release%20apk/badge.svg)](https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android/actions/workflows/main.yml)
 
 ### 公众号  
 关注公众号及时获取最新版，各种使用技巧以及Hass的新奇玩法(回复 最新版 可以获取最新版的下载地址,也可以回复HA获取HomeAssistant全新Flutter版APP)  

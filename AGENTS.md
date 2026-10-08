@@ -52,6 +52,12 @@ Detailed guidance lives in project skills under `.agents/skills/`. Load the matc
 - `ha-android-committing`: finalizing a change — format, tests, changelog, branch naming, and pull requests.
 - `ha-android-skill-maintenance`: updating AGENTS.md or the skills when guidance is missing, stale, or corrected.
 
+## Upstream Sync
+
+- Sync only from official release tags of upstream `home-assistant/android` (plain semver such as `2026.11.0`). Never merge `upstream/main`, `beta-*` CI build tags, or the `latest` tag.
+- Procedure: `git fetch upstream --tags`, verify the tag matches `^[0-9]{4}\.[0-9]+\.[0-9]+$`, then merge that tag into the working branch.
+- Release tags for this fork use the date style `vYYYY-MM-DD` (UTC date of the build) so the in-app update check (`versionName.contains(tag)`) matches.
+
 ## Pull Requests
 
 When creating a pull request, use `.github/pull_request_template.md` as the PR body. Keep PRs small and focused. If the change adds a feature or changes behavior visibly for end users, add it to the changelog in `app/src/main/kotlin/io/homeassistant/companion/android/changelog/ChangelogContent.kt`; small bug fixes don't get their own entry — the standing "Bug fixes and dependency updates" entry covers them. Before committing, format with ktlint and run the tests.

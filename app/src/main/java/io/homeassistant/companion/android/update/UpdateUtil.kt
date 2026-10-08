@@ -23,6 +23,11 @@ import java.io.IOException
 import java.util.*
 
 object UpdateUtil {
+    private const val REPO_URL = "https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android"
+    private const val FLAVOR_MINIMAL = "minimal"
+    private const val APK_NAME_FULL = "app-full-release.apk"
+    private const val APK_NAME_MINIMAL = "app-minimal-release.apk"
+
     private var mDownloadId: Long = 0
 
     fun checkNew(context: Activity, okHttpClient: OkHttpClient) {
@@ -99,7 +104,7 @@ object UpdateUtil {
     private fun githubCheckNew(context: Activity, okHttpClient: OkHttpClient) {
         try {
             val request = Request.Builder().apply {
-                url("https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/latest")
+                url("$REPO_URL/releases/latest")
             }.build()
             okHttpClient.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
@@ -118,13 +123,12 @@ object UpdateUtil {
                     val ver = url.split("/").last()
                     Log.d("checkNew==>ver:", ver)
                     if (!BuildConfig.VERSION_NAME.contains(ver)) {
-                        val apkUrl =
-                            "https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/download/$ver/app-full-release.apk"
+                        val apkName =
+                            if (BuildConfig.FLAVOR == FLAVOR_MINIMAL) APK_NAME_MINIMAL else APK_NAME_FULL
+                        val apkUrl = "$REPO_URL/releases/download/$ver/$apkName"
                         Log.d("checkNew==>apkUrl:", apkUrl)
                         val updateInfo = UpdateInfo(
-                            ver, "如果无法直接更新，可以关注公众号进行更新！\n" +
-                                "公众号：UnknownExceptions 回复 最新版 获取新版本\n" +
-                                "也可回复HA获取全新Flutter版本", apkUrl
+                            ver, "点击下载最新版本，下载完成后按提示安装。", apkUrl
                         )
                         val intent = Intent(context, UpdateActivity::class.java)
                         intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)

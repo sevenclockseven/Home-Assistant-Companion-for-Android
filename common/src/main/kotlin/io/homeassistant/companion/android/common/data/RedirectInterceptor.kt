@@ -11,13 +11,13 @@ class RedirectInterceptor : Interceptor {
         val response = chain.proceed(request)
         if (request.url.toString().contains("Home-Assistant-Companion-for-Android/releases/latest")) {
             //获取重定向的地址
-            // https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/tag/v2022-09-15
+            // https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android/releases/tag/v2022-09-15
             val location = response.headers["location"]
             if (location != null) {
                 val myBody: ResponseBody = location.toResponseBody()
                 return response.newBuilder().body(myBody).build()
             }
-            // https://github.com/nesror/Home-Assistant-Companion-for-Android/releases/download/v20220915/app-full-release.apk
+            // https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android/releases/download/v20220915/app-full-release.apk
 
 
         }
