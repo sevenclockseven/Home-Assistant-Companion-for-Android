@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - v*
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -44,4 +43,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "**/release/*.apk"
+          allowUpdates: true
+          replaceExistingAssets: true
           token: ${{ secrets.GITHUB_TOKEN }}
