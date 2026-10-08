@@ -31,17 +31,6 @@ object UpdateUtil {
     private var mDownloadId: Long = 0
 
     fun checkNew(context: Activity, okHttpClient: OkHttpClient) {
-        val showHint = context.getSharedPreferences("config", Context.MODE_PRIVATE).getBoolean(
-            "showHint",
-            false
-        )
-        if (!showHint) {
-            HintDialog(context).show()
-            context.getSharedPreferences("config", Context.MODE_PRIVATE).edit()
-                .putBoolean("showHint", true)
-                .apply()
-        }
-
         val checkTime = context.getSharedPreferences("config", Context.MODE_PRIVATE).getLong(
             UpdateActivity.CHECK_TIME,
             0

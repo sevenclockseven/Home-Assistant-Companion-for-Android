@@ -5,12 +5,6 @@
 ![visit](https://visitor-badge.glitch.me/badge?page_id=sevenclockseven.Home-Assistant-Companion-for-Android&left_text=visit)
 [![Build and Release apk](https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android/workflows/Build%20and%20Release%20apk/badge.svg)](https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android/actions/workflows/main.yml)
 
-<!--
-* 欢迎捐赠，以便地理编码功能可以持续服务   
-
- <img src="ali.png" height="300"/> <img src="wx.jpeg" height="300"/>
- -->
-
 （适合没有gms服务或谷歌服务受限的用）同时修复官方app的UA问题，导致部分前端组件异常（如 高德地图）
 
 ## Documentation
