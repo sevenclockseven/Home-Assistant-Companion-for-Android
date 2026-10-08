@@ -3,7 +3,6 @@ import com.google.gms.googleservices.GoogleServicesPlugin.GoogleServicesPluginCo
 plugins {
     alias(libs.plugins.homeassistant.android.application)
     alias(libs.plugins.homeassistant.android.flavor)
-    alias(libs.plugins.firebase.appdistribution)
     alias(libs.plugins.homeassistant.android.dependencies)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.screenshot)
@@ -50,18 +49,12 @@ android {
     screenshotTests {
         imageDifferenceThreshold = 0.00025f // 0.025%
     }
-
-
-//    firebaseAppDistribution {
-//        serviceCredentialsFile = "firebaseAppDistributionServiceCredentialsFile.json"
-//        releaseNotesFile = "./app/build/outputs/changelogBeta"
-//        groups = "continuous-deployment"
-//    }
 }
 
 dependencies {
     // Most of the dependencies are coming from the convention plugin to avoid duplication with `:automotive` module.
     "fullImplementation"(libs.car.projected)
+    ksp(project(":provides-sensor-processor"))
     //"fullImplementation"(libs.amap)
 
     screenshotTestImplementation(libs.compose.uiTooling)
