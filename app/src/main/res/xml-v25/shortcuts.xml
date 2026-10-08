@@ -14,7 +14,7 @@
     </shortcut>
     <shortcut
         android:enabled="true"
-        android:icon="@drawable/ic_github"
+        android:icon="@drawable/github"
         android:shortcutId="github shortcut"
         android:shortcutLongLabel="@string/shortcutLongLabel_github"
         android:shortcutShortLabel="@string/shortcutShortLabel_github">
