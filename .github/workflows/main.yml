@@ -34,6 +34,51 @@ jobs:
           :common:test
           --continue
 
+      # ktlintFormat rewrites sources in place before reporting, so the reported
+      # line numbers may not match the checked-out file. Dump the post-format
+      # state on failure to make quality gate regressions actionable from logs.
+      - name: Diagnose quality gate failure
+        if: failure()
+        run: |
+          FILE='app/src/full/kotlin/io/homeassistant/companion/android/sensors/LocationSensorManager.kt'
+          echo '===== files modified by ktlintFormat ====='
+          git diff --name-only
+          echo '===== ktlint plain reports ====='
+          find . -path '*/build/reports/ktlint/*' -name '*.txt' -print -exec cat {} \; 2>/dev/null
+          echo '===== git diff: LocationSensorManager.kt ====='
+          git diff --no-color -- "$FILE"
+          if [ -f "$FILE" ]; then
+            echo '===== line audit of formatted file ====='
+            python3 - "$FILE" <<'PYEOF'
+          import sys
+          path = sys.argv[1]
+          with open(path, encoding='utf-8') as fh:
+              lines = fh.read().splitlines()
+          print('total lines:', len(lines))
+          over = [(i, len(s)) for i, s in enumerate(lines, 1) if len(s) > 120]
+          print('lines >120:', len(over))
+          for i, n in over:
+              print(f'  L{i} len={n}: {lines[i - 1][:160]}')
+          print('--- L1055..L1095 ---')
+          for i in range(1055, min(1095, len(lines)) + 1):
+              s = lines[i - 1]
+              print(f'L{i} len={len(s)}: ' + s.replace(chr(9), '<TAB>'))
+          PYEOF
+            echo '===== raw bytes of formatted line 1077 ====='
+            sed -n '1077p' "$FILE" | od -c | head -8
+          else
+            echo "$FILE not found"
+          fi
+
+      - name: Upload ktlint reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ktlint-reports
+          path: '**/build/reports/ktlint/**'
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Build with Gradle
         run: chmod +x gradlew && ./gradlew :app:assembleFullRelease :app:assembleMinimalRelease -PRELEASE_TAG=${{ github.ref_name }}
         env:
