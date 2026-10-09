@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="aa_launch_native">Native mode</string>
+    <string name="update_check_failed">Unable to fetch version information. GitHub may be unreachable.</string>
+    <string name="update_download_hint">Tap to download the latest version, then follow the prompts to install.</string>
+    <string name="update_notification_downloading">Downloading update</string>
+    <string name="update_download_failed">Download failed</string>
+    <string name="update_new_version_found">New version available (%1$s)\n%2$s</string>
+    <string name="update_downloading_percent">Downloading (%1$d%%)</string>
+    <string name="update_dialog_content">Update details</string>
+    <string name="update_dialog_start">Update now</string>
+    <string name="settings_amap_key_confirm">OK</string>
+    <string name="settings_amap_key_title">Your own Amap Android Key</string>
+    <string name="settings_amap_key_message">To switch back to the system GPS directly, clear the field and tap OK.\nNot recommended: newer versions already obtain location without Amap.\nAvailability is not guaranteed; Amap may block package names.\nPackage: io.homeassistant.companion.android\nHSA1: 52:7D:B7:46:44:F9:BB:AE:B5:7F:B1:07:78:AC:AE:58:B3:A4:30:56\n</string>
     <string name="aa_driving_optimized_change">Use Home Assistant in drive mode?</string>
     <string name="aa_navigation">Navigation</string>
     <string name="aa_connection_error_title">Unable to connect</string>

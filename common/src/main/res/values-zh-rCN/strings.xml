@@ -1522,4 +1522,15 @@
     <string name="widget_todo_preview_item_third">面包</string>
     <string name="sensor_name_tonal_palette_sensor">色调板</string>
     <string name="sensor_description_tonal_palette_sensor">当前使用的动态取色主题名称</string>
+    <string name="update_check_failed">获取版本信息失败，您可能无法访问github。</string>
+    <string name="update_download_hint">点击下载最新版本，下载完成后按提示安装。</string>
+    <string name="update_notification_downloading">更新中</string>
+    <string name="update_download_failed">下载失败</string>
+    <string name="update_new_version_found">发现新版本(%1$s)\n%2$s</string>
+    <string name="update_downloading_percent">正在下载(%1$d%%)</string>
+    <string name="update_dialog_content">更新内容</string>
+    <string name="update_dialog_start">直接更新</string>
+    <string name="settings_amap_key_confirm">确定</string>
+    <string name="settings_amap_key_title">你自己的高德地图Android Key</string>
+    <string name="settings_amap_key_message">换回直接调用系统gps请清空后点击确定\n不建议使用，新版本不使用高德也已经可以获取地理位置信息了\n不保证可用，高德可能会封包名\n包名：io.homeassistant.companion.android\nHSA1: 52:7D:B7:46:44:F9:BB:AE:B5:7F:B1:07:78:AC:AE:58:B3:A4:30:56\n</string>
 </resources>
