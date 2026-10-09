@@ -15,8 +15,10 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import io.homeassistant.companion.android.BuildConfig
 import io.homeassistant.companion.android.common.R as commonR
+import io.homeassistant.companion.android.common.util.kotlinJsonMapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -29,9 +31,14 @@ import kotlin.time.Clock
 
 object UpdateUtil {
     private const val REPO_URL = "https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android"
+    private const val RELEASES_LATEST_API_URL =
+        "https://api.github.com/repos/sevenclockseven/Home-Assistant-Companion-for-Android/releases/latest"
     private const val FLAVOR_MINIMAL = "minimal"
     private const val APK_NAME_FULL = "app-full-release.apk"
     private const val APK_NAME_MINIMAL = "app-minimal-release.apk"
+
+    @Serializable
+    private data class LatestRelease(val tagName: String)
 
     /** Minimum delay after app launch before checking for updates, so startup is not slowed down. */
     const val UPDATE_CHECK_DELAY_MILLIS = 10_000L
@@ -60,7 +67,8 @@ object UpdateUtil {
     private fun githubCheckNew(context: Context, okHttpClient: OkHttpClient) {
         try {
             val request = Request.Builder().apply {
-                url("$REPO_URL/releases/latest")
+                url(RELEASES_LATEST_API_URL)
+                header("Accept", "application/vnd.github+json")
             }.build()
             okHttpClient.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
@@ -76,15 +84,13 @@ object UpdateUtil {
                 }
 
                 override fun onResponse(call: Call, response: Response) {
-                    // Follow the redirect to the API to learn the latest release tag.
-                    val url = response.request.url.toString()
-                    val ver = url.split("/").last()
+                    val ver = readLatestTag(response) ?: return
                     Timber.d("Update check latest tag: %s", ver)
                     context.getSharedPreferences("config", Context.MODE_PRIVATE).edit()
                         .putLong(UpdateActivity.CHECK_TIME, Clock.System.now().toEpochMilliseconds())
                         .apply()
                     if (!ver.startsWith("v")) {
-                        // Unexpected redirect target (e.g. HTML error page), never a release tag.
+                        // Defense in depth: fork release tags always start with "v".
                         return
                     }
                     if (!BuildConfig.VERSION_NAME.contains(ver)) {
@@ -104,6 +110,19 @@ object UpdateUtil {
             })
         } catch (e: Exception) {
             Timber.w(e, "Update check could not be started")
+        }
+    }
+
+    private fun readLatestTag(response: Response): String? {
+        if (!response.isSuccessful) {
+            Timber.w("Update check returned HTTP %s", response.code)
+            return null
+        }
+        return runCatching {
+            kotlinJsonMapper.decodeFromString<LatestRelease>(response.body.string()).tagName
+        }.getOrElse { e ->
+            Timber.w(e, "Update check could not parse the latest release")
+            null
         }
     }
 
