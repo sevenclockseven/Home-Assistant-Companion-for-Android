@@ -56,7 +56,7 @@ Detailed guidance lives in project skills under `.agents/skills/`. Load the matc
 
 - Sync only from official release tags of upstream `home-assistant/android` (plain semver such as `2026.11.0`). Never merge `upstream/main`, `beta-*` CI build tags, or the `latest` tag.
 - Procedure: `git fetch upstream --tags`, verify the tag matches `^[0-9]{4}\.[0-9]+\.[0-9]+$`, then merge that tag into the working branch.
-- Release tags for this fork use the date style `vYYYY-MM-DD` (UTC date of the build) so the in-app update check (`versionName.contains(tag)`) matches.
+- Release tags for this fork use the date style `vYYYY-MM-DD` (UTC date of the build) so the in-app update check (`versionName.contains(tag)`) matches. The build takes the pushed tag verbatim as `versionName` through the `RELEASE_TAG` Gradle property (`-PRELEASE_TAG`); local builds fall back to the current date. For a second release on the same UTC day, append a sequence suffix (`vYYYY-MM-DD.N`, e.g. `v2026-10-09.2`) so every tag stays unique and matchable.
 
 ## Pull Requests
 
