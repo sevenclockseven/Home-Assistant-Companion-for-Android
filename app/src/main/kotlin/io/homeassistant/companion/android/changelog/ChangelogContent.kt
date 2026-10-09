@@ -76,11 +76,19 @@ internal val currentChangelog = Changelog(
             contentRes = commonR.string.changelog_entry_matter_commissioning,
             platforms = setOf(ChangelogPlatform.APP),
         ),
+        ChangelogEntry(
+            contentRes = commonR.string.changelog_entry_chinese_sync,
+            platforms = setOf(ChangelogPlatform.APP, ChangelogPlatform.AUTOMOTIVE, ChangelogPlatform.WEAR),
+        ),
     ),
     fixed = listOf(
         ChangelogEntry(
             contentRes = commonR.string.changelog_entry_bug_fixes,
             platforms = setOf(ChangelogPlatform.APP, ChangelogPlatform.AUTOMOTIVE, ChangelogPlatform.WEAR),
+        ),
+        ChangelogEntry(
+            contentRes = commonR.string.changelog_entry_onboarding_fix,
+            platforms = setOf(ChangelogPlatform.APP),
         ),
     ),
 )
