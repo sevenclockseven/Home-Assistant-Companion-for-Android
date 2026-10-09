@@ -171,12 +171,10 @@ class SettingsFragment(
             val editText = EditText(requireActivity())
             editText.setText(amapKey)
             AlertDialog.Builder(requireActivity())
-                .setTitle("你自己的高德地图Android Key")
+                .setTitle(getString(commonR.string.settings_amap_key_title))
                 .setView(editText)
-                .setMessage(
-                    "换回直接调用系统gps请清空后点击确定\n不建议使用，新版本不使用高德也已经可以获取地理位置信息了\n不保证可用，高德可能会封包名\n包名：io.homeassistant.companion.android\nHSA1: 52:7D:B7:46:44:F9:BB:AE:B5:7F:B1:07:78:AC:AE:58:B3:A4:30:56\n",
-                )
-                .setPositiveButton("确定") { _, _ ->
+                .setMessage(getString(commonR.string.settings_amap_key_message))
+                .setPositiveButton(getString(commonR.string.settings_amap_key_confirm)) { _, _ ->
                     context?.getSharedPreferences("config", Context.MODE_PRIVATE)?.edit()
                         ?.putString("amapKey", editText.text.toString())
                         ?.apply()
