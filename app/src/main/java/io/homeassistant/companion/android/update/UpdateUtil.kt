@@ -99,7 +99,6 @@ object UpdateUtil {
                         intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         context.startActivity(intent)
-                        context.overridePendingTransition(0, 0)
                     }
                 }
             })
