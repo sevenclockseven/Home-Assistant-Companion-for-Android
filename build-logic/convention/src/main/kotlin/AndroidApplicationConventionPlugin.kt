@@ -20,6 +20,8 @@ private const val APPLICATION_ID = "io.homeassistant.companion.android"
  * out of this convention plugin.
  *
  * The application's `versionCode` can be set via the `VERSION_CODE` environment variable.
+ * The `versionName` defaults to `v` plus the current date and can be pinned to a pushed release
+ * tag via the `RELEASE_TAG` Gradle property (`-PRELEASE_TAG=v...`).
  *
  * A `release` signing configuration is automatically created. The keystore information can beexo_controls_playback_speeds
  * provided through the following environment variables:
@@ -46,7 +48,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     applicationId = APPLICATION_ID
                     targetSdk = libs.versions.androidSdk.target.get().toInt()
 
-                    versionName = getVersionName()
+                    versionName = getVersionName(project)
                     versionCode = getVersionCode()
                     val noStrictMode = project.findProperty("noStrictMode")?.toString()?.ifEmpty { "true" }
                         ?.toBoolean() ?: false
@@ -91,6 +93,12 @@ fun getVersionCode(): Int {
     return (time / 1000).toInt()
 }
 
-fun getVersionName(): String {
+fun getVersionName(project: Project): String {
+    // Read as a Gradle property (not an env var) so the value reaches the build even when the
+    // Gradle daemon was started by an earlier step without this property set.
+    val releaseTag = project.findProperty("RELEASE_TAG")?.toString()
+    if (!releaseTag.isNullOrBlank()) {
+        return releaseTag
+    }
     return "v" + SimpleDateFormat("yyyy-MM-dd").format(System.currentTimeMillis())
 }
