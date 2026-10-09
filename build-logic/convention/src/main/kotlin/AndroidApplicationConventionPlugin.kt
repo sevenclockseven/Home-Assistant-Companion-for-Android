@@ -23,12 +23,11 @@ private const val APPLICATION_ID = "io.homeassistant.companion.android"
  * The `versionName` defaults to `v` plus the current date and can be pinned to a pushed release
  * tag via the `RELEASE_TAG` Gradle property (`-PRELEASE_TAG=v...`).
  *
- * A `release` signing configuration is automatically created. The keystore information can beexo_controls_playback_speeds
- * provided through the following environment variables:
- * - `KEYSTORE_PATH`: The path to the keystore file.
- * - `KEYSTORE_PASSWORD`: The password for the keystore.
- * - `KEYSTORE_ALIAS`: The alias for the key within the keystore.
- * - `KEYSTORE_ALIAS_PASSWORD`: The password for the key alias.
+ * A `release` signing configuration is automatically created, signed with the `nestor.keystore`
+ * file in the project root. The key credentials are read from the following environment
+ * variables:
+ * - `NESTOR_KEYSTORE_PASSWORD`: The password for the keystore and its key.
+ * - `NESTOR_KEYSTORE_ALIAS`: The alias for the key within the keystore.
  */
 class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -59,16 +58,15 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     viewBinding = true
                 }
 
-                val NESTOR_KEYSTORE_PASSWORD = System.getenv("NESTOR_KEYSTORE_PASSWORD")
-                val NESTOR_KEYSTORE_ALIAS = System.getenv("NESTOR_KEYSTORE_ALIAS")
-                // val PGY_API_KEY = System.getenv("PGY_API_KEY")
+                val nestorKeystorePassword = System.getenv("NESTOR_KEYSTORE_PASSWORD")
+                val nestorKeystoreAlias = System.getenv("NESTOR_KEYSTORE_ALIAS")
 
                 signingConfigs {
                     create("release") {
                         storeFile = file("../nestor.keystore")
-                        storePassword = NESTOR_KEYSTORE_PASSWORD
-                        keyAlias = NESTOR_KEYSTORE_ALIAS
-                        keyPassword = NESTOR_KEYSTORE_PASSWORD
+                        storePassword = nestorKeystorePassword
+                        keyAlias = nestorKeystoreAlias
+                        keyPassword = nestorKeystorePassword
                         enableV1Signing = true
                         enableV2Signing = true
                     }

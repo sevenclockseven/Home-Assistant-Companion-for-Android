@@ -37,7 +37,7 @@ class UpdateActivity : AppCompatActivity() {
         const val CHECK_TIME = "CheckTime"
         const val UPDATE_INFO = "UpdateInfo"
         var forceMark = false
-        var WHAT_PROGRESS = 1001
+        var whatProgress = 1001
     }
 
     private var updateInfo: UpdateInfo? = null
@@ -141,14 +141,14 @@ class UpdateActivity : AppCompatActivity() {
                 }
                 return
             }
-            val mDownload_so_far =
+            val downloadSoFar =
                 c.getInt(c.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-            val mDownload_all = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+            val downloadTotal = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
             val msg = Message.obtain()
-            if (mDownload_all > 0) {
-                msg.what = WHAT_PROGRESS
-                msg.arg1 = mDownload_so_far
-                msg.arg2 = mDownload_all
+            if (downloadTotal > 0) {
+                msg.what = whatProgress
+                msg.arg1 = downloadSoFar
+                msg.arg2 = downloadTotal
                 mHandler!!.sendMessage(msg)
             }
             if (!c.isClosed) {
@@ -197,7 +197,7 @@ class UpdateActivity : AppCompatActivity() {
         override fun handleMessage(msg: Message) {
             super.handleMessage(msg)
             val updateDialog = updateDialogWeak.get()
-            if (msg.what == WHAT_PROGRESS) {
+            if (msg.what == whatProgress) {
                 updateDialog?.setProgress(msg.arg1, msg.arg2)
             }
         }

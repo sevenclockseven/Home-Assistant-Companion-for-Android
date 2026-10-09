@@ -5,20 +5,23 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+/**
+ * Converts GCJ-02 coordinates, as used by Chinese mapping providers such as AMap,
+ * into WGS-84 GPS coordinates.
+ */
 object GCJ2WGS {
-    // 圆周率 GCJ_02_To_WGS_84
-    var PI = 3.14159265358979324
+    private const val PI = 3.14159265358979324
 
     /**
-     * @author 作者:
-     * 方法描述:方法可以将高德地图SDK获取到的GPS经纬度转换为真实的经纬度，可以用于解决安卓系统使用高德SDK获取经纬度的转换问题。
-     * @param 需要转换的经纬度
-     * @return 转换为真实GPS坐标后的经纬度
-     * @throws <异常类型> {@inheritDoc} 异常描述
-    </异常类型> */
+     * Transforms a GCJ-02 coordinate into a WGS-84 coordinate.
+     *
+     * @param lat latitude in GCJ-02
+     * @param lon longitude in GCJ-02
+     * @return map with the transformed `lat` and `lon` values
+     */
     fun delta(lat: Double, lon: Double): HashMap<String, Double> {
-        val a = 6378245.0 //克拉索夫斯基椭球参数长半轴a
-        val ee = 0.00669342162296594323 //克拉索夫斯基椭球参数第一偏心率平方
+        val a = 6378245.0 // Krasovsky ellipsoid semi-major axis
+        val ee = 0.00669342162296594323 // Krasovsky ellipsoid first eccentricity squared
         var dLat = transformLat(lon - 105.0, lat - 35.0)
         var dLon = transformLon(lon - 105.0, lat - 35.0)
         val radLat = lat / 180.0 * PI
@@ -33,7 +36,6 @@ object GCJ2WGS {
         return hm
     }
 
-    //转换经度
     private fun transformLon(x: Double, y: Double): Double {
         var ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * sqrt(abs(x))
         ret += (20.0 * sin(6.0 * x * PI) + 20.0 * sin(2.0 * x * PI)) * 2.0 / 3.0
@@ -42,7 +44,6 @@ object GCJ2WGS {
         return ret
     }
 
-    //转换纬度
     private fun transformLat(x: Double, y: Double): Double {
         var ret =
             -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * sqrt(abs(x))

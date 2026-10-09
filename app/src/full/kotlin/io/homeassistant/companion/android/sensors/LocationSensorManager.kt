@@ -18,15 +18,11 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Looper
 import android.os.PowerManager
-import androidx.core.content.getSystemService
 import android.text.TextUtils
 import android.util.Log
 import androidx.annotation.RequiresApi
-
-//import com.amap.api.location.AMapLocation
-//import com.amap.api.location.AMapLocationClient
-//import com.amap.api.location.AMapLocationClientOption
-//import com.amap.api.location.AMapLocationListener
+import androidx.core.content.edit
+import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.homeassistant.companion.android.GCJ2WGS
 import io.homeassistant.companion.android.common.R as commonR
@@ -42,7 +38,6 @@ import io.homeassistant.companion.android.common.sensors.SensorManager.BasicSens
 import io.homeassistant.companion.android.common.sensors.SensorReceiverBase
 import io.homeassistant.companion.android.common.sensors.SensorRepository
 import io.homeassistant.companion.android.common.util.DisabledLocationHandler
-
 import io.homeassistant.companion.android.database.location.LocationHistoryItem
 import io.homeassistant.companion.android.database.location.LocationHistoryItemResult
 import io.homeassistant.companion.android.database.location.LocationHistoryItemTrigger
@@ -52,16 +47,15 @@ import io.homeassistant.companion.android.database.sensor.SensorSettingType
 import io.homeassistant.companion.android.database.sensor.toSensorWithAttributes
 import io.homeassistant.companion.android.location.HighAccuracyLocationService
 import io.homeassistant.companion.android.notifications.MessagingManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import timber.log.Timber
-import androidx.core.content.edit
 
 var lastTime = 0L
 var lastTime2 = 0L
@@ -399,11 +393,31 @@ class LocationSensorManager @Inject constructor(
             }
 
             val highAccuracyModeSettingEnabled = getHighAccuracyModeSetting()
-            enableDisableSetting(backgroundLocation, SETTING_HIGH_ACCURACY_MODE_UPDATE_INTERVAL, highAccuracyModeSettingEnabled)
-            enableDisableSetting(backgroundLocation, SETTING_HIGH_ACCURACY_MODE_BLUETOOTH_DEVICES, highAccuracyModeSettingEnabled)
-            enableDisableSetting(backgroundLocation, SETTING_HIGH_ACCURACY_MODE_ZONE, highAccuracyModeSettingEnabled && isZoneEnable)
-            enableDisableSetting(backgroundLocation, SETTING_HIGH_ACCURACY_MODE_TRIGGER_RANGE_ZONE, highAccuracyModeSettingEnabled && isZoneEnable)
-            enableDisableSetting(backgroundLocation, SETTING_HIGH_ACCURACY_BT_ZONE_COMBINED, highAccuracyModeSettingEnabled && isZoneEnable)
+            enableDisableSetting(
+                backgroundLocation,
+                SETTING_HIGH_ACCURACY_MODE_UPDATE_INTERVAL,
+                highAccuracyModeSettingEnabled
+            )
+            enableDisableSetting(
+                backgroundLocation,
+                SETTING_HIGH_ACCURACY_MODE_BLUETOOTH_DEVICES,
+                highAccuracyModeSettingEnabled
+            )
+            enableDisableSetting(
+                backgroundLocation,
+                SETTING_HIGH_ACCURACY_MODE_ZONE,
+                highAccuracyModeSettingEnabled && isZoneEnable
+            )
+            enableDisableSetting(
+                backgroundLocation,
+                SETTING_HIGH_ACCURACY_MODE_TRIGGER_RANGE_ZONE,
+                highAccuracyModeSettingEnabled && isZoneEnable
+            )
+            enableDisableSetting(
+                backgroundLocation,
+                SETTING_HIGH_ACCURACY_BT_ZONE_COMBINED,
+                highAccuracyModeSettingEnabled && isZoneEnable
+            )
 
             lastHighAccuracyZones = highAccuracyZones
             lastHighAccuracyTriggerRange = highAccuracyTriggerRange
@@ -465,7 +479,11 @@ class LocationSensorManager @Inject constructor(
             SETTING_HIGH_ACCURACY_MODE_UPDATE_INTERVAL,
         )
 
-        var updateIntervalHighAccuracySecondsInt = if (updateIntervalHighAccuracySeconds.isEmpty()) DEFAULT_UPDATE_INTERVAL_HA_SECONDS else updateIntervalHighAccuracySeconds.toInt()
+        var updateIntervalHighAccuracySecondsInt = if (updateIntervalHighAccuracySeconds.isEmpty()) {
+            DEFAULT_UPDATE_INTERVAL_HA_SECONDS
+        } else {
+            updateIntervalHighAccuracySeconds.toInt()
+        }
         if (updateIntervalHighAccuracySecondsInt < 5) {
             updateIntervalHighAccuracySecondsInt = DEFAULT_UPDATE_INTERVAL_HA_SECONDS
 
@@ -489,7 +507,9 @@ class LocationSensorManager @Inject constructor(
 
         // As soon as the high accuracy mode shouldn't be enabled, disable the force_off of high accuracy mode!
         if (!shouldEnableHighAccuracyMode && forceHighAccuracyModeOff) {
-            Timber.d("Forcing off of high accuracy mode disabled, because high accuracy mode had to be disabled anyway.")
+            Timber.d(
+                "Forcing off of high accuracy mode disabled, because high accuracy mode had to be disabled anyway."
+            )
             forceHighAccuracyModeOff = false
         }
 
@@ -561,9 +581,15 @@ class LocationSensorManager @Inject constructor(
 
             if (!forceHighAccuracyModeOn && !forceHighAccuracyModeOff) {
                 if (!btDevConnected) {
-                    Timber.d("High accuracy mode disabled, because defined ($highAccuracyModeBTDevices) bluetooth device(s) not connected (Connected devices: $bluetoothDevices)")
+                    Timber.d(
+                        "High accuracy mode disabled, because defined ($highAccuracyModeBTDevices) " +
+                            "bluetooth device(s) not connected (Connected devices: $bluetoothDevices)"
+                    )
                 } else {
-                    Timber.d("High accuracy mode enabled, because defined ($highAccuracyModeBTDevices) bluetooth device(s) connected (Connected devices: $bluetoothDevices)")
+                    Timber.d(
+                        "High accuracy mode enabled, because defined ($highAccuracyModeBTDevices) " +
+                            "bluetooth device(s) connected (Connected devices: $bluetoothDevices)"
+                    )
                 }
             }
         }
@@ -572,11 +598,14 @@ class LocationSensorManager @Inject constructor(
             constraintsUsed = true
 
             // (Expanded) Zone entered
-            val zoneExpEntered = lastEnteredGeoZones.isNotEmpty() && highAccuracyExpZones.containsAll(lastEnteredGeoZones)
+            val zoneExpEntered =
+                lastEnteredGeoZones.isNotEmpty() && highAccuracyExpZones.containsAll(lastEnteredGeoZones)
 
-            // Exits events are only used if expended zones are used. The exit events are used to determine the enter of the expanded zone from the original zone
+            // Exit events are only used if expanded zones are used. The exit events are used to
+            // determine the enter of the expanded zone from the original zone
             // Zone exited
-            val zoneExited = useTriggerRange && lastExitedGeoZones.isNotEmpty() && highAccuracyZones.containsAll(lastExitedGeoZones)
+            val zoneExited = useTriggerRange && lastExitedGeoZones.isNotEmpty() &&
+                highAccuracyZones.containsAll(lastExitedGeoZones)
 
             inZone = zoneExpEntered || zoneExited
 
@@ -592,9 +621,9 @@ class LocationSensorManager @Inject constructor(
         // true = High accuracy mode enabled
         // false = High accuracy mode disabled
         //
-        // if BT device and zone are combined and BT device is connected AND in zone -> High accuracy mode enabled (true)
-        // if BT device and zone are NOT combined and either BT Device is connected OR in Zone -> High accuracy mode enabled (true)
-        // Else (NO BT dev connected and NOT in Zone), if min. one constraint is used ->  High accuracy mode disabled (false)
+        // if BT device and zone combined, device connected AND in zone -> enabled (true)
+        // if BT device and zone not combined, device connected OR in zone -> enabled (true)
+        // Else (no device connected and not in zone), if one constraint is used -> disabled (false)
         //                                             if no constraint is used ->  High accuracy mode enabled (true)
         return when {
             highAccuracyBtZoneCombined && btDevConnected && inZone -> true
@@ -844,7 +873,9 @@ class LocationSensorManager @Inject constructor(
 
     override suspend fun getAvailableSensors(): List<SensorManager.BasicSensor> {
         return if (DisabledLocationHandler.hasGPS(applicationContext)) {
-            listOf(singleAccurateLocation, backgroundLocation, zoneLocation, highAccuracyMode, highAccuracyUpdateInterval)
+            listOf(
+                singleAccurateLocation, backgroundLocation, zoneLocation, highAccuracyMode, highAccuracyUpdateInterval
+            )
         } else {
             listOf(backgroundLocation, zoneLocation, highAccuracyMode, highAccuracyUpdateInterval)
         }
@@ -857,7 +888,8 @@ class LocationSensorManager @Inject constructor(
         ignoreAccuracy: Boolean = false,
     ) {
         Timber.d(
-                "Last Location: \nCoords:(${location.latitude}, ${location.longitude})\nAccuracy: ${location.accuracy}\nBearing: ${location.bearing}",
+                "Last Location: \nCoords:(${location.latitude}, ${location.longitude})" +
+                    "\nAccuracy: ${location.accuracy}\nBearing: ${location.bearing}",
         )
         var accuracy = 0
         if (location.accuracy.toInt() >= 0) {
@@ -892,14 +924,15 @@ class LocationSensorManager @Inject constructor(
 //        if (now + 5000 < location.time && !highAccuracyModeEnabled) {
 //            Log.d(
 //                TAG,
-//                "Skipping location update that came from the future. ${now + 5000} should always be greater than ${location.time}"
+//                "Skipping future location update: $now + 5000 vs ${location.time}"
 //            )
 //            return
 //        }
 
         if (location.time < (lastLocationSend[serverId]?:0) || (now - location.time) > 320000) {
             Timber.d(
-                "Skipping old location update since time is before the last one we sent, received: ${location.time} last sent: $lastLocationSend",
+                "Skipping old location update since time is before the last one we sent, " +
+                    "received: ${location.time} last sent: $lastLocationSend",
             )
             return
         }
@@ -907,7 +940,7 @@ class LocationSensorManager @Inject constructor(
 //        if (now - location.time < 320000) {
 //            Log.d(
 //                TAG,
-//                "Received location that is ${now - location.time} milliseconds old, ${location.time} compared to $now with source ${location.provider}"
+//                "Received location ${now - location.time}ms old, ${location.time} vs $now from ${location.provider}"
 //            )
 //            if (lastUpdateLocation == updateLocationString) {
 //                if (now < lastLocationSend + 900000) {
@@ -1036,17 +1069,27 @@ class LocationSensorManager @Inject constructor(
 
         val now = System.currentTimeMillis()
         val fullSensor = sensorRepository.getFull(singleAccurateLocation.id).toSensorWithAttributes()
-        val latestAccurateLocation = fullSensor?.attributes?.firstOrNull { it.name == "lastAccurateLocationRequest" }?.value?.toLongOrNull() ?: 0L
+        val latestAccurateLocation = fullSensor?.attributes
+            ?.firstOrNull { it.name == "lastAccurateLocationRequest" }?.value?.toLongOrNull() ?: 0L
 
         val sensorSettings = sensorRepository.getSettings(singleAccurateLocation.id)
         val minAccuracy = sensorSettings
             .firstOrNull { it.name == SETTING_ACCURACY }?.value?.toIntOrNull()
             ?: DEFAULT_MINIMUM_ACCURACY
-        sensorRepository.addDynamicSetting(SensorSetting(singleAccurateLocation.id, SETTING_ACCURACY, minAccuracy.toString(), SensorSettingType.NUMBER))
+        sensorRepository.addDynamicSetting(
+            SensorSetting(singleAccurateLocation.id, SETTING_ACCURACY, minAccuracy.toString(), SensorSettingType.NUMBER)
+        )
         val minTimeBetweenUpdates = sensorSettings
             .firstOrNull { it.name == SETTING_ACCURATE_UPDATE_TIME }?.value?.toIntOrNull()
             ?: 60000
-        sensorRepository.addDynamicSetting(SensorSetting(singleAccurateLocation.id, SETTING_ACCURATE_UPDATE_TIME, minTimeBetweenUpdates.toString(), SensorSettingType.NUMBER))
+        sensorRepository.addDynamicSetting(
+            SensorSetting(
+                singleAccurateLocation.id,
+                SETTING_ACCURATE_UPDATE_TIME,
+                minTimeBetweenUpdates.toString(),
+                SensorSettingType.NUMBER
+            )
+        )
 
         // Only update accurate location at most once a minute
         if (now < latestAccurateLocation + minTimeBetweenUpdates) {
@@ -1140,7 +1183,7 @@ class LocationSensorManager @Inject constructor(
 //        }
 //        if (TextUtils.isEmpty(addressStr)) {
 //            addressStr =
-//                amapLocation!!.city + amapLocation!!.district + amapLocation!!.street + amapLocation!!.aoiName + amapLocation!!.floor
+//                amapLocation!!.city + amapLocation!!.district + amapLocation!!.street + amapLocation!!.aoiName
 //        }
 //        if (TextUtils.isEmpty(addressStr)) {
 //            Timber.d("addressStr--${amapLocation!!.locationDetail}")
