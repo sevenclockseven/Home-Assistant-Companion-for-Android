@@ -15,7 +15,7 @@
             android:layout_height="wrap_content"
             android:paddingLeft="10dp"
             android:paddingRight="10dp"
-            android:text="更新内容"
+            android:text="@string/update_dialog_content"
             android:gravity="center"
             android:textColor="#191919"
             android:textSize="16sp"/>
@@ -52,7 +52,7 @@
                 android:textColor="#000"
                 android:textSize="16sp"
                 android:background="?android:attr/selectableItemBackground"
-                android:text="取消"
+                android:text="@string/cancel"
                 android:visibility="gone"/>
         <TextView
                 android:id="@+id/go"
@@ -64,7 +64,7 @@
                 android:textColor="#F61C1C"
                 android:background="?android:attr/selectableItemBackground"
                 android:textSize="16sp"
-                android:text="直接更新"/>
+                android:text="@string/update_dialog_start"/>
     </LinearLayout>
 
 </LinearLayout>

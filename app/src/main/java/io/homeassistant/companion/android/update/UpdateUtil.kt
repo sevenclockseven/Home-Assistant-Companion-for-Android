@@ -10,17 +10,22 @@ import android.net.Uri
 import android.os.Build
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import io.homeassistant.companion.android.BuildConfig
+import io.homeassistant.companion.android.common.R as commonR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import timber.log.Timber
 import java.io.File
 import java.io.IOException
-import java.util.*
+import kotlin.time.Clock
 
 object UpdateUtil {
     private const val REPO_URL = "https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android"
@@ -28,106 +33,78 @@ object UpdateUtil {
     private const val APK_NAME_FULL = "app-full-release.apk"
     private const val APK_NAME_MINIMAL = "app-minimal-release.apk"
 
+    /** Minimum delay after app launch before checking for updates, so startup is not slowed down. */
+    const val UPDATE_CHECK_DELAY_MILLIS = 10_000L
+
+    private const val CHECK_INTERVAL_MILLIS = 24 * 60 * 60 * 1000L
+
     private var mDownloadId: Long = 0
 
-    fun checkNew(context: Activity, okHttpClient: OkHttpClient) {
+    /**
+     * Checks the fork's GitHub releases for a newer version, throttled to once per day.
+     * Shows an update dialog when a newer version exists.
+     */
+    fun checkNew(context: Context, okHttpClient: OkHttpClient) {
         val checkTime = context.getSharedPreferences("config", Context.MODE_PRIVATE).getLong(
             UpdateActivity.CHECK_TIME,
             0
         )
-        if (System.currentTimeMillis() - checkTime < 24 * 60 * 60 * 1000) {
+        val now = Clock.System.now().toEpochMilliseconds()
+        if (now - checkTime < CHECK_INTERVAL_MILLIS) {
             return
         }
 
-//        try {
-//            val formBody: RequestBody = FormBody.Builder()
-//                .add("_api_key", context.getAppMetaDataString("pgy_api_key"))
-//                .add("appKey", "8a601dcac3098f0d5c89fa9fe416ca94")
-//                .add("buildVersion", BuildConfig.VERSION_CODE.toString())
-//                .build()
-//            val request = Request.Builder().apply {
-//                url("https://www.pgyer.com/apiv2/app/check")
-//                post(formBody)
-//            }.build()
-//            okHttpClient.newCall(request).enqueue(object : Callback {
-//                override fun onFailure(call: Call, e: IOException) {
-//                    Log.e("checkNew==>", e.toString())
-//                    githubCheckNew(context, okHttpClient)
-//                }
-//
-//                override fun onResponse(call: Call, response: Response) {
-//                    val res = response.body?.string()
-//                    if (res.isNullOrEmpty()) {
-//                        githubCheckNew(context, okHttpClient)
-//                        return
-//                    }
-//                    //Log.e("onResponse==>", res)
-//                    val jsonObject = JSONObject(res)
-//                    if (jsonObject.getInt("code") != 0) {
-//                        githubCheckNew(context, okHttpClient)
-//                        return
-//                    }
-//                    val dataObject = jsonObject.getJSONObject("data")
-//                    val buildHaveNewVersion = dataObject.getBoolean("buildHaveNewVersion")
-//                    if (!buildHaveNewVersion) return
-//                    val downloadURL = dataObject.getString("downloadURL")
-//                    val ver = dataObject.getString("buildVersion")
-//                    val desc = try {
-//                        dataObject.getString("buildUpdateDescription")
-//                    } catch (e: Exception) {
-//                        "有新版本了！"
-//                    }
-//                    val updateInfo = UpdateInfo(ver, desc, downloadURL)
-//                    val intent = Intent(context, UpdateActivity::class.java)
-//                    intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)
-//                    context.startActivity(intent)
-//                    context.overridePendingTransition(0, 0)
-//                }
-//
-//            })
-//        } catch (e: Exception) {
         githubCheckNew(context, okHttpClient)
-        //   }
     }
 
-    private fun githubCheckNew(context: Activity, okHttpClient: OkHttpClient) {
+    private fun githubCheckNew(context: Context, okHttpClient: OkHttpClient) {
         try {
             val request = Request.Builder().apply {
                 url("$REPO_URL/releases/latest")
             }.build()
             okHttpClient.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    Log.e("checkNew==>", e.toString())
+                    Timber.w(e, "Update check failed")
+                    // Do not throttle on failure so the next launch retries.
                     runBlocking(Dispatchers.Main) {
                         Toast.makeText(
                             context,
-                            "获取版本信息失败，您可能无法访问github。",
+                            context.getString(commonR.string.update_check_failed),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
                 }
 
                 override fun onResponse(call: Call, response: Response) {
+                    // Follow the redirect to the API to learn the latest release tag.
                     val url = response.request.url.toString()
                     val ver = url.split("/").last()
-                    Log.d("checkNew==>ver:", ver)
+                    Timber.d("Update check latest tag: %s", ver)
+                    context.getSharedPreferences("config", Context.MODE_PRIVATE).edit()
+                        .putLong(UpdateActivity.CHECK_TIME, Clock.System.now().toEpochMilliseconds())
+                        .apply()
+                    if (!ver.startsWith("v")) {
+                        // Unexpected redirect target (e.g. HTML error page), never a release tag.
+                        return
+                    }
                     if (!BuildConfig.VERSION_NAME.contains(ver)) {
                         val apkName =
                             if (BuildConfig.FLAVOR == FLAVOR_MINIMAL) APK_NAME_MINIMAL else APK_NAME_FULL
                         val apkUrl = "$REPO_URL/releases/download/$ver/$apkName"
-                        Log.d("checkNew==>apkUrl:", apkUrl)
+                        Timber.d("Update found, apk url: %s", apkUrl)
                         val updateInfo = UpdateInfo(
-                            ver, "点击下载最新版本，下载完成后按提示安装。", apkUrl
+                            ver, context.getString(commonR.string.update_download_hint), apkUrl
                         )
                         val intent = Intent(context, UpdateActivity::class.java)
                         intent.putExtra(UpdateActivity.UPDATE_INFO, updateInfo)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         context.startActivity(intent)
                         context.overridePendingTransition(0, 0)
                     }
                 }
-
             })
         } catch (e: Exception) {
+            Timber.w(e, "Update check could not be started")
         }
     }
 
@@ -143,36 +120,30 @@ object UpdateUtil {
     }
 
     fun downLoadApk(context: Context, url: String, describeStr: String) {
-        // 得到系统的下载管理
         clearCurrentTask(context)
         val saveFile = apkFile(context)
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val uri = Uri.parse(url)
-        // 以下两行代码可以让下载的apk文件被直接安装而不用使用Fileprovider,系统7.0或者以上才启动。
+        // From Android 7.0 installing a file:// URI is blocked; a permissive VM policy keeps
+        // the legacy direct-file install working without routing through a FileProvider.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val localBuilder = VmPolicy.Builder()
             StrictMode.setVmPolicy(localBuilder.build())
         }
         val requestApk = DownloadManager.Request(uri)
-        // 设置在什么网络下下载
         requestApk.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_MOBILE or DownloadManager.Request.NETWORK_WIFI)
-        // 下载中和下载完后都显示通知栏
         requestApk.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-        if (saveFile.exists()) {    //判断文件是否存在，存在的话先删除
+        if (saveFile.exists()) {
             saveFile.delete()
         }
         requestApk.setDestinationUri(Uri.fromFile(saveFile))
-        // 设置下载中通知栏的提示消息
         requestApk.setTitle(describeStr)
-        // 设置设置下载中通知栏提示的介绍
-        requestApk.setDescription("更新中")
+        requestApk.setDescription(context.getString(commonR.string.update_notification_downloading))
 
-        // 7.0以上的系统适配
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             requestApk.setRequiresDeviceIdle(false)
             requestApk.setRequiresCharging(false)
         }
-        // 启动下载,该方法返回系统为当前下载请求分配的一个唯一的ID
         mDownloadId = downloadManager.enqueue(requestApk)
     }
 
@@ -182,7 +153,7 @@ object UpdateUtil {
         try {
             dm.remove(mDownloadId)
         } catch (ex: IllegalArgumentException) {
-            ex.printStackTrace()
+            Timber.w(ex, "Could not clear previous download task")
         }
     }
 
@@ -192,7 +163,6 @@ object UpdateUtil {
         val saveFile: File = apkFile(context)
         val intent = Intent(Intent.ACTION_VIEW)
         if (saveFile.exists()) {
-            // 兼容7.0
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                 val contentUri = FileProvider.getUriForFile(
@@ -201,24 +171,13 @@ object UpdateUtil {
                     saveFile
                 )
                 intent.setDataAndType(contentUri, "application/vnd.android.package-archive")
-                // 兼容8.0 测试发现小米会自动请求权限
-//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                    val hasInstallPermission = context.packageManager.canRequestPackageInstalls()
-//                    if (!hasInstallPermission) {
-//                        // 没有权限
-//                        Toast.makeText(context, "没有安装权限，请在设置中开启！", Toast.LENGTH_LONG).show()
-//                        //return
-//                    }
-//                }
             } else {
-                // <7.0
                 intent.setDataAndType(
                     Uri.fromFile(saveFile),
                     "application/vnd.android.package-archive"
                 )
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
-            // activity任务栈中Activity的个数>0
             if (context.packageManager.queryIntentActivities(intent, 0).size > 0) {
                 context.startActivity(intent)
             }
@@ -230,12 +189,10 @@ object UpdateUtil {
         if (!dir.exists()) {
             dir.mkdir()
         }
-        // 创建文件
         return File(dir, "temp.apk")
     }
 
     fun getDownloadId(): Long {
         return mDownloadId
     }
-
 }

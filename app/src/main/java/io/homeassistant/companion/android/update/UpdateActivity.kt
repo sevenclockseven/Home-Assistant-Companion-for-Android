@@ -11,10 +11,13 @@ import android.os.Message
 import android.os.Parcelable
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import io.homeassistant.companion.android.common.R as commonR
 import io.homeassistant.companion.android.update.UpdateUtil.downLoadApk
 import io.homeassistant.companion.android.update.UpdateUtil.getDownloadId
 import kotlinx.parcelize.Parcelize
+import timber.log.Timber
 import java.lang.ref.WeakReference
+import kotlin.time.Clock
 
 @Parcelize
 data class UpdateInfo(
@@ -22,7 +25,7 @@ data class UpdateInfo(
     var updateMsg: String?,
     var updateUrl: String,
     /**
-     * 0:不提示，1：提示，2：强更
+     * Prompt mode: 0 = never prompt, 1 = prompt, 2 = forced update.
      */
     var updateType: Int = 0,
 
@@ -73,11 +76,12 @@ class UpdateActivity : AppCompatActivity() {
         }
         try {
             updateDialog?.show()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Timber.w(e, "Update dialog could not be shown")
         }
 
         getSharedPreferences("config", Context.MODE_PRIVATE).edit()
-            .putLong(CHECK_TIME, System.currentTimeMillis()).apply()
+            .putLong(CHECK_TIME, Clock.System.now().toEpochMilliseconds()).apply()
     }
 
     private fun qFinish() {
@@ -96,9 +100,6 @@ class UpdateActivity : AppCompatActivity() {
 
     private var isRegisterReceiver = false
 
-    /**
-     * 注册下载成功的广播监听
-     */
     private fun setReceiver() {
         if (!isRegisterReceiver) {
             val receiver = DownloadReceiver()
@@ -112,14 +113,12 @@ class UpdateActivity : AppCompatActivity() {
         }
     }
 
-    //更新下载进度
     private fun startQuery() {
         if (getDownloadId() != 0L) {
             mHandler!!.post(mQueryProgressRunnable)
         }
     }
 
-    //查询下载进度
     private inner class QueryRunnable : Runnable {
         override fun run() {
             queryState()
@@ -127,15 +126,13 @@ class UpdateActivity : AppCompatActivity() {
         }
     }
 
-    //查询下载进度
     @SuppressLint("Range")
     private fun queryState() {
-        // 通过ID向下载管理查询下载情况，返回一个cursor
         val c = mDownloadManager!!.query(DownloadManager.Query().setFilterById(getDownloadId()))
         if (c == null) {
-            Toast.makeText(this, "下载失败", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(commonR.string.update_download_failed), Toast.LENGTH_SHORT).show()
             qFinish()
-        } else { // 以下是从游标中进行信息提取
+        } else {
             if (!c.moveToFirst()) {
                 qFinish()
                 updateDialog?.setProgress(1, 1)
@@ -161,7 +158,7 @@ class UpdateActivity : AppCompatActivity() {
     }
 
     private fun startDownload(context: Context, updateInfo: UpdateInfo) {
-        if (getDownloadId() != 0L) {  //根据任务ID判断是否存在相同的下载任务，如果有则清除
+        if (getDownloadId() != 0L) {
             clearCurrentTask(context, getDownloadId())
         }
         downLoadApk(
@@ -171,11 +168,6 @@ class UpdateActivity : AppCompatActivity() {
         )
     }
 
-    /**
-     * 下载前先移除前一个任务，防止重复下载
-     *
-     * @param downloadId
-     */
     private fun clearCurrentTask(mContext: Context, downloadId: Long) {
         val dm = mContext.getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         try {
@@ -185,12 +177,10 @@ class UpdateActivity : AppCompatActivity() {
         }
     }
 
-    //停止查询下载进度
     private fun stopQuery() {
         mHandler!!.removeCallbacks(mQueryProgressRunnable)
     }
 
-    //下载停止同时删除下载文件
     private fun removeDownload() {
         if (mDownloadManager != null) {
             mDownloadManager!!.remove(getDownloadId())

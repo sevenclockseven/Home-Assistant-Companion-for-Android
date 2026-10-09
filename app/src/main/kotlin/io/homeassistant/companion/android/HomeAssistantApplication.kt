@@ -41,6 +41,7 @@ import io.homeassistant.companion.android.sensors.SensorReceiver
 import io.homeassistant.companion.android.settings.language.LanguagesManager
 import io.homeassistant.companion.android.settings.shortcuts.HaShortcutManager
 import io.homeassistant.companion.android.themes.NightModeManager
+import io.homeassistant.companion.android.update.UpdateUtil
 import io.homeassistant.companion.android.util.LifecycleHandler
 import io.homeassistant.companion.android.util.QuestUtil
 import io.homeassistant.companion.android.util.initCrashSaving
@@ -57,6 +58,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -128,6 +130,9 @@ open class HomeAssistantApplication : Application() {
             languagesManager.applyCurrentLang()
             nightModeManager.applyCurrentNightMode()
             shortcutManager.migrateLegacyShortcuts()
+
+            delay(UpdateUtil.UPDATE_CHECK_DELAY_MILLIS)
+            UpdateUtil.checkNew(this@HomeAssistantApplication, okHttpClient)
         }
 
         configureComposeDiagnosticStackTrace(isDebug = BuildConfig.DEBUG)

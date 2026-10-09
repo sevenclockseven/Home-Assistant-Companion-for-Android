@@ -8,6 +8,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatDialog
 import io.homeassistant.companion.android.R
+import io.homeassistant.companion.android.common.R as commonR
 
 class UpdateDialog(context: Context, private val updateInfo: UpdateInfo) :
     AppCompatDialog(context, R.style.Update_Dialog) {
@@ -28,7 +29,11 @@ class UpdateDialog(context: Context, private val updateInfo: UpdateInfo) :
             updateInterface?.let { it(1) }
         }
         hint = findViewById(R.id.hint)
-        hint?.text = "发现新版本(${updateInfo.version})\n${updateInfo.updateMsg}"
+        hint?.text = context.getString(
+            commonR.string.update_new_version_found,
+            updateInfo.version,
+            updateInfo.updateMsg.orEmpty(),
+        )
         clean = findViewById(R.id.clean)
         progress = findViewById(R.id.progress)
         layoutBtn = findViewById(R.id.layoutBtn)
@@ -50,7 +55,7 @@ class UpdateDialog(context: Context, private val updateInfo: UpdateInfo) :
     }
 
     private fun extracted() {
-        hint!!.text = "正在下载(0%)"
+        hint!!.text = context.getString(commonR.string.update_downloading_percent, 0)
         progress?.visibility = View.VISIBLE
         layoutBtn?.visibility = View.GONE
     }
@@ -64,7 +69,7 @@ class UpdateDialog(context: Context, private val updateInfo: UpdateInfo) :
         progress?.max = arg2
         progress?.progress = arg1
         val p = (arg1 * 100L) / arg2
-        hint!!.text = "正在下载($p%)"
+        hint!!.text = context.getString(commonR.string.update_downloading_percent, p)
         if (p == 100L && updateInfo.updateType != 2) {
             dismiss()
         }
