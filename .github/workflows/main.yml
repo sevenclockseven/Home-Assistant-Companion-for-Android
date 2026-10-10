@@ -24,17 +24,24 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # ktlintFormat can fail on intermediate states while rewriting legacy
+      # sources even when its final output is fully clean (e.g. a transient
+      # max-line-length violation reported mid-fix). The first run has already
+      # written the formatted output in place, so rerunning on it is
+      # idempotent: the second pass sees a clean fixed point and passes.
+      # Format runs in its own invocation so ktlintCheck can never observe a
+      # half-written file, and retries once before giving up.
       - name: Check code style and run unit tests
         id: quality
         continue-on-error: true
-        run: >
-          chmod +x gradlew &&
-          ./gradlew ktlintFormat
-          ktlintCheck
-          :build-logic:convention:ktlintFormat
-          :build-logic:convention:ktlintCheck
-          :common:test
-          --continue
+        run: |
+          chmod +x gradlew
+          ./gradlew ktlintFormat :build-logic:convention:ktlintFormat ||
+            ./gradlew ktlintFormat :build-logic:convention:ktlintFormat
+          ./gradlew ktlintCheck \
+            :build-logic:convention:ktlintCheck \
+            :common:test \
+            --continue
 
       # ktlintFormat can fail on intermediate states while rewriting legacy
       # sources even when its final output is fully clean (e.g. a transient
