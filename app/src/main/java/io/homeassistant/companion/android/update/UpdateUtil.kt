@@ -30,7 +30,7 @@ import java.io.IOException
 import kotlin.time.Clock
 
 object UpdateUtil {
-    private const val REPO_URL = "https://github.com/sevenclockseven/Home-Assistant-Companion-for-Android"
+    private const val R2_BASE_URL = "https://pub-bbe9218cc784488192bfbe79ec03ccbf.r2.dev"
     private const val RELEASES_LATEST_API_URL =
         "https://api.github.com/repos/sevenclockseven/Home-Assistant-Companion-for-Android/releases/latest"
     private const val FLAVOR_MINIMAL = "minimal"
@@ -96,7 +96,7 @@ object UpdateUtil {
                     if (!BuildConfig.VERSION_NAME.contains(ver)) {
                         val apkName =
                             if (BuildConfig.FLAVOR == FLAVOR_MINIMAL) APK_NAME_MINIMAL else APK_NAME_FULL
-                        val apkUrl = "$REPO_URL/releases/download/$ver/$apkName"
+                        val apkUrl = "$R2_BASE_URL/ha-android/$ver/$apkName"
                         Timber.d("Update found, apk url: %s", apkUrl)
                         val updateInfo = UpdateInfo(
                             ver, context.getString(commonR.string.update_download_hint), apkUrl
