@@ -43,12 +43,12 @@ object UpdateUtil {
     /** Minimum delay after app launch before checking for updates, so startup is not slowed down. */
     const val UPDATE_CHECK_DELAY_MILLIS = 10_000L
 
-    private const val CHECK_INTERVAL_MILLIS = 24 * 60 * 60 * 1000L
+    private const val CHECK_INTERVAL_MILLIS = 60 * 60 * 1000L
 
     private var mDownloadId: Long = 0
 
     /**
-     * Checks the fork's GitHub releases for a newer version, throttled to once per day.
+     * Checks the fork's GitHub releases for a newer version, throttled to once per hour.
      * Shows an update dialog when a newer version exists.
      */
     fun checkNew(context: Context, okHttpClient: OkHttpClient) {
