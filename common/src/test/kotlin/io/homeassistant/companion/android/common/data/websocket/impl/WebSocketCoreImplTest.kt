@@ -1840,29 +1840,27 @@ class WebSocketCoreImplTest {
             )
 
             subscription.test {
-                // First reconnection: the subscribe request is sent but never acknowledged, and
-                // cancelling the ambiguous socket reports the failure as OkHttp would
+                // First reconnection: the subscribe request is sent but never acknowledged
                 every {
                     mockConnection.send(match<String> { it.contains(""""type":"$SUBSCRIBE_TYPE_SUBSCRIBE_EVENTS"""") })
                 } returns true
-                mockCancelTriggersOnFailure()
                 closeConnection()
                 advanceTimeBy(11.seconds)
                 runCurrent()
 
-                // Once the answer times out the subscription must be kept for the next reconnection,
-                // and the ambiguous socket (the subscribe may have been accepted with the answer
-                // lost) must be cancelled so restoration resumes on a clean connection
+                // Once the answer times out the subscription must be kept for the next
+                // attempt, and the connection must stay open: a slow answer must not tear
+                // down a healthy socket with active subscriptions
                 advanceTimeBy(31.seconds)
                 runCurrent()
                 assertTrue(
                     webSocketCore.activeMessages.any { it.value is ActiveMessage.Subscription },
                     "Subscription should be kept when the resubscription is not acknowledged",
                 )
-                verify(atLeast = 1) { mockConnection.cancel() }
+                verify(exactly = 0) { mockConnection.cancel() }
 
-                // The reported failure alone must drive the second reconnection: once the subscribe
-                // request is acknowledged, events flow again
+                // The restoration retries with backoff on the same connection: once the
+                // subscribe request is acknowledged, events flow again
                 var resubscribeId: Long? = null
                 every {
                     mockConnection.send(match<String> { it.contains(""""type":"$SUBSCRIBE_TYPE_SUBSCRIBE_EVENTS"""") })
@@ -1889,9 +1887,8 @@ class WebSocketCoreImplTest {
                     webSocketCore.activeMessages.count { it.value is ActiveMessage.Subscription },
                     "Only the acknowledged subscription should remain",
                 )
-                // Only the ambiguous socket was cancelled, never the replacement that restored
-                // the subscription
-                verify(exactly = 1) { mockConnection.cancel() }
+                // The connection was never cancelled along the way
+                verify(exactly = 0) { mockConnection.cancel() }
             }
         }
 
@@ -2030,7 +2027,7 @@ class WebSocketCoreImplTest {
         }
 
         @Test
-        fun `Given an established connection When a ping goes unanswered Then it is cancelled and restored`() = runTest {
+        fun `Given an established connection When a ping goes unanswered Then the connection is kept`() = runTest {
             setupServer(backgroundScope = backgroundScope)
             prepareAuthenticationAnswer()
             assertTrue(webSocketCore.connect())
@@ -2044,40 +2041,21 @@ class WebSocketCoreImplTest {
             )
 
             subscription.test {
-                // The server went away without the TCP connection being reset (e.g. it restarted and
-                // its address moved): writes are still accepted but nothing ever answers
+                // The answer is merely slow, for example because background network
+                // throttling delays it past the request timeout: a missing pong must not
+                // tear down a working connection with active subscriptions
                 every { mockConnection.send(match<String> { it.contains(""""type":"ping"""") }) } returns true
-                mockCancelTriggersOnFailure()
 
                 val ping = async { webSocketCore.ping() }
                 advanceTimeBy(31.seconds)
                 runCurrent()
                 assertFalse(ping.await())
-                verify { mockConnection.cancel() }
-
-                // The close handling restores the subscription once the server answers again
-                prepareAuthenticationAnswer()
-                var resubscribeId: Long? = null
-                every {
-                    mockConnection.send(match<String> { it.contains(""""type":"$SUBSCRIBE_TYPE_SUBSCRIBE_EVENTS"""") })
-                } answers {
-                    val id = checkNotNull(Regex(""""id":(\d+)""").find(firstArg<String>())?.groupValues?.get(1)?.toLong())
-                    resubscribeId = id
-                    webSocketListener.onMessage(
-                        mockConnection,
-                        """{"id":$id,"type":"result","success":true,"result":{}}""",
-                    )
-                    true
-                }
-                advanceTimeBy(11.seconds)
-                runCurrent()
-
-                val newId = checkNotNull(resubscribeId) { "Subscription should have been re-registered" }
-                webSocketListener.onMessage(
-                    mockConnection,
-                    """{"id":$newId, "type":"event", "event":{"event_type":"state_changed", "time_fired":"2016-11-26T01:37:24.265429+00:00", "data": {"entity_id":"light.bed_light"}}}""",
+                verify(exactly = 0) { mockConnection.cancel() }
+                assertEquals(WebSocketState.Active, webSocketCore.getConnectionState())
+                assertTrue(
+                    webSocketCore.activeMessages.any { it.value is ActiveMessage.Subscription },
+                    "Subscription should stay tracked when a ping goes unanswered",
                 )
-                assertEquals("light.bed_light", awaitItem().entityId)
             }
         }
 

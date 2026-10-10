@@ -23,7 +23,6 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import io.homeassistant.companion.android.BuildConfig
 import io.homeassistant.companion.android.common.R
 import io.homeassistant.companion.android.common.data.servers.ServerManager
 import io.homeassistant.companion.android.common.util.CHANNEL_WEBSOCKET
@@ -57,13 +56,7 @@ class WebsocketManager(appContext: Context, workerParams: WorkerParameters) :
         private const val SOURCE = "Websocket"
         private const val NOTIFICATION_ID = 65423
         private const val NOTIFICATION_RESTRICTED_ID = 65424
-        private val DEFAULT_WEBSOCKET_SETTING = if (BuildConfig.FLAVOR ==
-            "full"
-        ) {
-            WebsocketSetting.NEVER
-        } else {
-            WebsocketSetting.ALWAYS
-        }
+        private val DEFAULT_WEBSOCKET_SETTING = WebsocketSetting.ALWAYS
         private val ACTION_EXTRA_KEYS = listOf("uri", "behavior", "authenticationRequired")
 
         suspend fun start(context: Context) {

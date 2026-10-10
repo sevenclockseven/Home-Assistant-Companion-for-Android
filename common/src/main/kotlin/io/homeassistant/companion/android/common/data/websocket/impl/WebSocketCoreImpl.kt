@@ -121,7 +121,7 @@ private val MAX_DELAY_BEFORE_RECONNECT = 2.minutes
  * #### Reconnection and re-subscription:
  * - On failure or when the socket is closing, if there are active subscriptions created with [subscribeTo], the implementation will automatically retry to open the connection until it succeeds.
  * - Upon reconnection, the implementation resubscribes to all active subscriptions to ensure continuity. Each attempt is tracked as an [ActiveMessage.Reconnecting] entry until the server acknowledges it.
- * - A subscription the server actively rejects is retried indefinitely with capped backoff — it is never abandoned while its collector is still listening. An attempt that receives no answer cancels the socket so restoration resumes on a clean connection where no ambiguous acceptance can linger.
+ * - A subscription the server actively rejects is retried indefinitely with capped backoff — it is never abandoned while its collector is still listening. An attempt that receives no answer is retried the same way on the same connection: a merely slow answer (for example under background network throttling) must not tear down a working socket, and events the server already accepted are routed to the original subscription.
  * - Restoration always starts when a connection is established, whoever established it: any subscription still tracked from a previous connection is restored (for example after the reconnection loop gave up on an authentication failure and a later [sendMessage] reconnects).
  *
  * #### Supported features:
@@ -642,23 +642,13 @@ internal class WebSocketCoreImpl(
     }
 
     override suspend fun ping(): Boolean {
-        // Capture the connection this ping verifies, so a connection (re)established while
-        // waiting for the pong is never cancelled by mistake.
-        val holder = connectionHolder.get()
+        // A missing pong must not cancel the connection: background network throttling on
+        // OEM Android builds routinely delays the answer past the request timeout, and
+        // cancelling there tears down a healthy connection with active subscriptions in an
+        // endless reconnect loop. Events lost while the socket is quiet are recovered by
+        // the subscription restore loop after a real close.
         val response = sendMessage(mapOf("type" to "ping"))
-        if (response is PongSocketResponse) return true
-
-        if (holder != null && connectionHolder.get() === holder) {
-            // No pong on a connection that is believed to be established means the socket is
-            // half-open: the server went away without the TCP connection being reset, for
-            // example when it restarted and its address moved. OkHttp keeps buffering writes
-            // into such a socket without ever failing, so no close callback would fire on its
-            // own. Cancelling forces onFailure, which runs handleClosingSocket and lets the
-            // restore loop bring the connection and its subscriptions back.
-            Timber.w("No pong received on the established connection, cancelling it to trigger reconnection")
-            holder.webSocket.cancel()
-        }
-        return false
+        return response is PongSocketResponse
     }
 
     override suspend fun <T : Any> subscribeTo(
@@ -1193,9 +1183,10 @@ internal class WebSocketCoreImpl(
      *
      * A subscription the server actively rejects is kept and retried by the caller with its
      * capped backoff — silently abandoning it would leave the collector of its flow waiting for
-     * events that can never arrive. An attempt that receives no answer leaves the server state
-     * ambiguous (the subscribe may have been accepted with the answer lost), so the socket is
-     * cancelled and restoration resumes on a clean connection.
+     * events that can never arrive. An attempt that receives no answer is retried the same way
+     * on the same connection: the socket is not cancelled, because a merely slow answer (for
+     * example under background network throttling) must not tear down a working connection, and
+     * events the server already accepted are routed to the original subscription anyway.
      *
      * @return the ids of the subscriptions that could not be restored and are kept for a retry
      */
@@ -1207,26 +1198,16 @@ internal class WebSocketCoreImpl(
             val oldId = remaining.removeAt(0)
             val original = activeMessages[oldId] as? ActiveMessage.Subscription ?: continue
 
-            // Capture the connection this attempt is sent on, so a connection (re)established
-            // while waiting for the answer is never cancelled by mistake.
-            val attemptHolder = connectionHolder.get()
             val response = sendMessage(Command.WithAnswer.Resubscription(original))
             when {
                 response == null -> {
-                    // No answer: the attempt entry is already dropped by sendMessage, but the
-                    // server may have accepted the subscribe with the answer lost. Cancel the
-                    // socket the attempt went out on (never a replacement established while
-                    // waiting) so the retry happens on a clean connection where no ambiguous
-                    // acceptance can linger.
-                    Timber.e(
-                        "No answer re-registering subscription with ${original.request}," +
-                            " restoring on a clean connection",
-                    )
+                    // No answer: the attempt entry is already dropped by sendMessage. Keep the
+                    // connection open — a slow answer must not tear it down — and let the caller
+                    // retry with backoff. Events the server accepted without the answer reaching
+                    // us are routed to the original subscription anyway.
+                    Timber.e("No answer re-registering subscription with ${original.request}, retrying")
                     failed += oldId
                     failed += remaining
-                    if (attemptHolder != null && connectionHolder.get() === attemptHolder) {
-                        attemptHolder.webSocket.cancel()
-                    }
                     return failed
                 }
 
