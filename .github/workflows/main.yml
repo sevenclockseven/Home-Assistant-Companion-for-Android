@@ -126,6 +126,14 @@ jobs:
       - name: Upload APK to R2
         run: |
           endpoint="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          # Lengths and 8-hex sha256 prefixes are safe to log: GitHub masks
+          # only the full secret value, so these fingerprints prove whether
+          # the CI secrets byte-match the credentials `rclone config show`
+          # displays locally, without exposing any secret.
+          echo "fingerprint key_id  len=${#AWS_ACCESS_KEY_ID} sha=$(printf '%s' "$AWS_ACCESS_KEY_ID" | sha256sum | cut -c1-8)"
+          echo "fingerprint secret  len=${#AWS_SECRET_ACCESS_KEY} sha=$(printf '%s' "$AWS_SECRET_ACCESS_KEY" | sha256sum | cut -c1-8)"
+          echo "fingerprint bucket  len=${#R2_BUCKET} sha=$(printf '%s' "$R2_BUCKET" | sha256sum | cut -c1-8)"
+          echo "fingerprint account len=${#R2_ACCOUNT_ID} sha=$(printf '%s' "$R2_ACCOUNT_ID" | sha256sum | cut -c1-8)"
           # Read-only probes that run before the upload so a wrong bucket name
           # (head-bucket 404) is distinguishable from a token without write
           # permission (403): R2 can surface both as AccessDenied on upload,
@@ -150,7 +158,9 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
+          # R2 accepts the literal `auto` region (what rclone uses); signing
+          # with a fixed region can be rejected on newer bucket-scoped tokens.
+          AWS_DEFAULT_REGION: auto
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
 
