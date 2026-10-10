@@ -125,18 +125,28 @@ jobs:
       # must already be downloadable at that point.
       - name: Upload APK to R2
         run: |
+          endpoint="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          # Read-only probes that run before the upload so a wrong bucket name
+          # (head-bucket 404) is distinguishable from a token without write
+          # permission (403): R2 can surface both as AccessDenied on upload,
+          # and only the probe output tells which secret to fix. Probes must
+          # never fail the step, hence `|| true` on each.
+          aws sts get-caller-identity --endpoint-url "$endpoint" || true
+          aws s3api list-buckets --endpoint-url "$endpoint" \
+            --query 'Buckets[].Name' --output text || true
+          aws s3api head-bucket --bucket "$R2_BUCKET" --endpoint-url "$endpoint" || true
           shopt -s nullglob
           apks=(app/build/outputs/apk/*/release/*.apk)
           echo "found ${#apks[@]} apk(s): ${apks[*]}"
           for apk in "${apks[@]}"; do
             name=$(basename "$apk")
             aws s3 cp "$apk" "s3://${R2_BUCKET}/ha-android/${GITHUB_REF_NAME}/${name}" \
-              --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" --no-progress
+              --endpoint-url "$endpoint" --no-progress
             echo "uploaded ${name}"
           done
           echo "objects under ha-android/${GITHUB_REF_NAME}/:"
           aws s3 ls "s3://${R2_BUCKET}/ha-android/${GITHUB_REF_NAME}/" \
-            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+            --endpoint-url "$endpoint"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
