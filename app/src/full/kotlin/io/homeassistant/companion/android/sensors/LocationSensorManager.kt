@@ -1073,15 +1073,13 @@ class LocationSensorManager @Inject constructor(
             ?.firstOrNull { it.name == "lastAccurateLocationRequest" }?.value?.toLongOrNull() ?: 0L
 
         val sensorSettings = sensorRepository.getSettings(singleAccurateLocation.id)
-        val minAccuracy = sensorSettings
-            .firstOrNull { it.name == SETTING_ACCURACY }?.value?.toIntOrNull()
-            ?: DEFAULT_MINIMUM_ACCURACY
+        val accuracySetting = sensorSettings.firstOrNull { it.name == SETTING_ACCURACY }
+        val minAccuracy = accuracySetting?.value?.toIntOrNull() ?: DEFAULT_MINIMUM_ACCURACY
         sensorRepository.addDynamicSetting(
             SensorSetting(singleAccurateLocation.id, SETTING_ACCURACY, minAccuracy.toString(), SensorSettingType.NUMBER)
         )
-        val minTimeBetweenUpdates = sensorSettings
-            .firstOrNull { it.name == SETTING_ACCURATE_UPDATE_TIME }?.value?.toIntOrNull()
-            ?: 60000
+        val accurateUpdateTimeSetting = sensorSettings.firstOrNull { it.name == SETTING_ACCURATE_UPDATE_TIME }
+        val minTimeBetweenUpdates = accurateUpdateTimeSetting?.value?.toIntOrNull() ?: 60000
         sensorRepository.addDynamicSetting(
             SensorSetting(
                 singleAccurateLocation.id,
