@@ -55,8 +55,10 @@ jobs:
       # ktlintFormat rewrites sources in place before reporting, so the reported
       # line numbers may not match the checked-out file. Dump the post-format
       # state on failure to make quality gate regressions actionable from logs.
+      # Also fire when the rerun rescued the job: the first-run failure report
+      # is the only evidence of what the intermediate state looked like.
       - name: Diagnose quality gate failure
-        if: failure()
+        if: always() && steps.quality.outcome == 'failure'
         run: |
           FILE='app/src/full/kotlin/io/homeassistant/companion/android/sensors/LocationSensorManager.kt'
           echo '===== files modified by ktlintFormat ====='
@@ -89,7 +91,7 @@ jobs:
           fi
 
       - name: Upload ktlint reports
-        if: failure()
+        if: always() && steps.quality.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: ktlint-reports
@@ -116,10 +118,18 @@ jobs:
       # must already be downloadable at that point.
       - name: Upload APK to R2
         run: |
-          for apk in app/build/outputs/apk/*/release/*.apk; do
-            aws s3 cp "$apk" "s3://${R2_BUCKET}/ha-android/${GITHUB_REF_NAME}/$(basename "$apk")" \
-              --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/*/release/*.apk)
+          echo "found ${#apks[@]} apk(s): ${apks[*]}"
+          for apk in "${apks[@]}"; do
+            name=$(basename "$apk")
+            aws s3 cp "$apk" "s3://${R2_BUCKET}/ha-android/${GITHUB_REF_NAME}/${name}" \
+              --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" --no-progress
+            echo "uploaded ${name}"
           done
+          echo "objects under ha-android/${GITHUB_REF_NAME}/:"
+          aws s3 ls "s3://${R2_BUCKET}/ha-android/${GITHUB_REF_NAME}/" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
