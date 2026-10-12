@@ -1,5 +1,6 @@
 package io.homeassistant.companion.android.websocket
 
+import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -8,6 +9,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.PowerManager
+import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
 import androidx.concurrent.futures.await
 import androidx.core.app.NotificationCompat
@@ -36,6 +38,7 @@ import io.homeassistant.companion.android.notifications.MessagingManager
 import io.homeassistant.companion.android.settings.SettingsActivity
 import io.homeassistant.companion.android.util.hasActiveConnection
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -58,6 +61,55 @@ class WebsocketManager(appContext: Context, workerParams: WorkerParameters) :
         private const val NOTIFICATION_RESTRICTED_ID = 65424
         private val DEFAULT_WEBSOCKET_SETTING = WebsocketSetting.ALWAYS
         private val ACTION_EXTRA_KEYS = listOf("uri", "behavior", "authenticationRequired")
+        private val WATCHDOG_INTERVAL = 9.minutes
+        private const val WATCHDOG_ALARM_ACTION = "io.homeassistant.companion.android.websocket.WATCHDOG"
+        private const val WATCHDOG_ALARM_REQUEST_CODE = 0
+
+        /**
+         * Schedules the WebSocket watchdog alarm. The alarm restarts [WebsocketManager] if the
+         * periodic worker was killed (for example by the user swiping the app away), so
+         * notifications keep arriving without waiting for the next WorkManager cycle. The
+         * inexact alarm is re-armed on every trigger and is cheap because the callback only
+         * re-enqueues existing work and never touches the network.
+         */
+        fun scheduleWatchdogAlarm(context: Context) {
+            val alarmManager = context.getSystemService<AlarmManager>() ?: return
+            val intent = Intent(context, WebsocketWatchdogReceiver::class.java).apply {
+                action = WATCHDOG_ALARM_ACTION
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                WATCHDOG_ALARM_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + WATCHDOG_INTERVAL.inWholeMilliseconds,
+                pendingIntent,
+            )
+        }
+
+        /**
+         * Schedules the watchdog alarm only when no alarm is currently set, so that frequent
+         * app launches do not keep pushing the alarm further into the future.
+         */
+        fun ensureWatchdogAlarm(context: Context) {
+            val intent = Intent(context, WebsocketWatchdogReceiver::class.java).apply {
+                action = WATCHDOG_ALARM_ACTION
+            }
+            val existing = PendingIntent.getBroadcast(
+                context,
+                WATCHDOG_ALARM_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+            )
+            if (existing == null) {
+                scheduleWatchdogAlarm(context)
+            } else {
+                existing.cancel()
+            }
+        }
 
         suspend fun start(context: Context) {
             val websocketNotifications =

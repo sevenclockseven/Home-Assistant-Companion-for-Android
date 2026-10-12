@@ -48,6 +48,7 @@ import io.homeassistant.companion.android.util.initCrashSaving
 import io.homeassistant.companion.android.util.threadPolicyIgnoredViolationRules
 import io.homeassistant.companion.android.util.vmPolicyIgnoredViolationRules
 import io.homeassistant.companion.android.websocket.WebsocketBroadcastReceiver
+import io.homeassistant.companion.android.websocket.WebsocketManager
 import io.homeassistant.companion.android.widgets.button.ButtonWidget
 import io.homeassistant.companion.android.widgets.entity.EntityWidget
 import io.homeassistant.companion.android.widgets.mediaplayer.MediaPlayerControlsWidget
@@ -150,6 +151,8 @@ open class HomeAssistantApplication : Application() {
             },
             ContextCompat.RECEIVER_EXPORTED,
         )
+
+        WebsocketManager.ensureWatchdogAlarm(this)
 
         val sensorReceiver = SensorReceiver()
         // This will cause the sensor to be updated every time the OS broadcasts that a cable was plugged/unplugged.
