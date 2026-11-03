@@ -42,8 +42,10 @@ import io.homeassistant.companion.android.frontend.exoplayer.ExoPlayerUiState
 import io.homeassistant.companion.android.frontend.exoplayer.FrontendExoPlayerManager
 import io.homeassistant.companion.android.frontend.externalbus.FrontendExternalBusRepository
 import io.homeassistant.companion.android.frontend.externalbus.incoming.HapticType
+import io.homeassistant.companion.android.frontend.externalbus.incoming.MatterShareDevicePayload
 import io.homeassistant.companion.android.frontend.externalbus.outgoing.SuccessResultMessage
-import io.homeassistant.companion.android.frontend.filechooser.FileChooserManager
+import io.homeassistant.companion.android.frontend.filechooser.FileChooserResult
+import io.homeassistant.companion.android.frontend.filechooser.FrontendFileChooserHandler
 import io.homeassistant.companion.android.frontend.gesture.FrontendGestureManager
 import io.homeassistant.companion.android.frontend.gesture.GestureResult
 import io.homeassistant.companion.android.frontend.handler.FrontendBusObserver
@@ -81,6 +83,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -161,7 +164,10 @@ class FrontendViewModelTest {
         serverId: Int = this.serverId,
         path: String? = null,
         dialogManager: FrontendDialogManager = FrontendDialogManager(),
-        fileChooserManager: FileChooserManager = FileChooserManager(),
+        fileChooserHandler: FrontendFileChooserHandler = FrontendFileChooserHandler(
+            cameraCaptureRepository = mockk(relaxed = true),
+            permissionManager = permissionManager,
+        ),
         httpAuthHandler: FrontendHttpAuthHandler = FrontendHttpAuthHandler(
             authenticationDao = mockk(relaxed = true),
             clock = FakeClock(),
@@ -184,7 +190,7 @@ class FrontendViewModelTest {
             gestureManager = gestureManager,
             prefsRepository = prefsRepository,
             dialogManager = dialogManager,
-            fileChooserManager = fileChooserManager,
+            fileChooserHandler = fileChooserHandler,
             httpAuthHandler = httpAuthHandler,
             exoPlayerManager = exoPlayerManager,
             improvHandler = improvHandler,
@@ -2105,7 +2111,13 @@ class FrontendViewModelTest {
                 UrlLoadResult.Success(url = testUrlWithAuth, serverId = serverId),
             )
 
-            val viewModel = createViewModel()
+            val viewModel = createViewModel(
+                fileChooserHandler = FrontendFileChooserHandler(
+                    cameraCaptureRepository = mockk(relaxed = true),
+                    permissionManager = permissionManager,
+                    backgroundDispatcher = StandardTestDispatcher(testScheduler),
+                ),
+            )
 
             val filePathCallback = mockk<ValueCallback<Array<Uri>>>(relaxed = true)
             val fileChooserParams = mockk<WebChromeClient.FileChooserParams>(relaxed = true)
@@ -2122,7 +2134,7 @@ class FrontendViewModelTest {
             assertTrue(handled)
             val pending = viewModel.pendingFileChooser.value
             assertNotNull(pending)
-            assertTrue(pending.fileChooserParams === fileChooserParams)
+            assertTrue(pending.input.params === fileChooserParams)
         }
 
         @Test
@@ -2131,7 +2143,13 @@ class FrontendViewModelTest {
                 UrlLoadResult.Success(url = testUrlWithAuth, serverId = serverId),
             )
 
-            val viewModel = createViewModel()
+            val viewModel = createViewModel(
+                fileChooserHandler = FrontendFileChooserHandler(
+                    cameraCaptureRepository = mockk(relaxed = true),
+                    permissionManager = permissionManager,
+                    backgroundDispatcher = StandardTestDispatcher(testScheduler),
+                ),
+            )
             val filePathCallback = mockk<ValueCallback<Array<Uri>>>(relaxed = true)
 
             val client = viewModel.createWebChromeClient(onShowCustomView = {}, onHideCustomView = {})
@@ -2147,7 +2165,7 @@ class FrontendViewModelTest {
             assertNotNull(pending)
 
             val uris = arrayOf(mockk<Uri>())
-            pending.onResult(uris)
+            pending.onResult(FileChooserResult.Selected(uris.toList()))
             advanceUntilIdle()
 
             verify { filePathCallback.onReceiveValue(uris) }
@@ -2160,7 +2178,13 @@ class FrontendViewModelTest {
                 UrlLoadResult.Success(url = testUrlWithAuth, serverId = serverId),
             )
 
-            val viewModel = createViewModel()
+            val viewModel = createViewModel(
+                fileChooserHandler = FrontendFileChooserHandler(
+                    cameraCaptureRepository = mockk(relaxed = true),
+                    permissionManager = permissionManager,
+                    backgroundDispatcher = StandardTestDispatcher(testScheduler),
+                ),
+            )
             val filePathCallback = mockk<ValueCallback<Array<Uri>>>(relaxed = true)
 
             val client = viewModel.createWebChromeClient(onShowCustomView = {}, onHideCustomView = {})
@@ -2173,7 +2197,7 @@ class FrontendViewModelTest {
             advanceUntilIdle()
             val request = viewModel.pendingFileChooser.value
             assertNotNull(request)
-            request.onResult(null)
+            request.onResult(FileChooserResult.Cancelled)
             advanceUntilIdle()
 
             verify { filePathCallback.onReceiveValue(null) }
@@ -3103,6 +3127,38 @@ class FrontendViewModelTest {
     }
 
     @Nested
+    inner class WebViewDebugSetting {
+
+        @ParameterizedTest
+        @ValueSource(booleans = [true, false])
+        fun `Given the developer setting when created then webViewDebugEnabled follows it`(
+            enabled: Boolean,
+        ) = runTest {
+            every { urlManager.serverUrlFlow(any(), any()) } returns flowOf(
+                UrlLoadResult.Success(url = testUrlWithAuth, serverId = serverId),
+            )
+            coEvery { prefsRepository.webViewDebugFlow() } returns flowOf(enabled)
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            assertEquals(enabled, viewModel.webViewDebugEnabled.value)
+        }
+
+        @Test
+        fun `Given the setting not read yet when created then webViewDebugEnabled is null`() = runTest {
+            every { urlManager.serverUrlFlow(any(), any()) } returns flowOf(
+                UrlLoadResult.Success(url = testUrlWithAuth, serverId = serverId),
+            )
+            coEvery { prefsRepository.webViewDebugFlow() } returns MutableSharedFlow()
+
+            val viewModel = createViewModel()
+
+            assertNull(viewModel.webViewDebugEnabled.value)
+        }
+    }
+
+    @Nested
     inner class MatterThreadRouting {
 
         @Test
@@ -3120,6 +3176,24 @@ class FrontendViewModelTest {
             advanceUntilIdle()
 
             coVerify { matterThreadHandler.onStartMatterCommissioning() }
+        }
+
+        @Test
+        fun `Given StartMatterSharing handler event when collected then handler is called with its message`() = runTest {
+            val messageFlow = MutableSharedFlow<FrontendHandlerEvent>()
+            every { frontendBusObserver.messageResults() } returns messageFlow
+            every { urlManager.serverUrlFlow(any(), any()) } returns flowOf(
+                UrlLoadResult.Success(url = testUrlWithAuth, serverId = serverId),
+            )
+            val payload = MatterShareDevicePayload(passcode = 20202021, discriminator = 3840, remainingSeconds = 250)
+
+            createViewModel()
+            advanceUntilIdle()
+
+            messageFlow.emit(FrontendHandlerEvent.StartMatterSharing(messageId = 7, payload = payload))
+            advanceUntilIdle()
+
+            coVerify { matterThreadHandler.onStartMatterSharing(messageId = 7, payload = payload) }
         }
 
         @Test

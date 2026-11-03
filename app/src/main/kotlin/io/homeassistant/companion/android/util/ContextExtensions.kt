@@ -2,7 +2,6 @@ package io.homeassistant.companion.android.util
 
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
@@ -12,6 +11,9 @@ import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import io.homeassistant.companion.android.common.util.SdkVersion
+
+/** Must match the `FileProvider` authorities in `AndroidManifest.xml` (`${applicationId}.provider`). */
+private const val FILE_PROVIDER_AUTHORITY_SUFFIX = ".provider"
 
 fun Context.getAttribute(attr: Int, fallbackAttr: Int): Int {
     val value = TypedValue()
@@ -43,14 +45,6 @@ fun Context.getActivity(): ComponentActivity? = when (this) {
     else -> null
 }
 
-fun Context.getAppMetaDataString(metaName: String): String {
-    return try {
-        packageManager
-            .getApplicationInfo(
-                packageName,
-                PackageManager.GET_META_DATA
-            ).metaData.getString(metaName, "")
-    } catch (e: Exception) {
-        ""
-    }
-}
+/** Authority of the app `FileProvider`, to share app files through content URIs. */
+val Context.fileProviderAuthority: String
+    get() = packageName + FILE_PROVIDER_AUTHORITY_SUFFIX

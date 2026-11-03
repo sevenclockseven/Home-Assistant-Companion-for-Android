@@ -280,7 +280,7 @@ internal class WebSocketCoreImpl(
             is Command.WithAnswer -> {
                 val id = id.getAndIncrement()
                 val outbound = command.request.message.plus("id" to id)
-                Timber.d("Sending message $id: $outbound")
+                Timber.d("Sending message $id: ${sensitive { outbound.toString() }}")
                 activeMessages[id] = command.toActiveMessage()
                 val result = currentConnection.send(
                     kotlinJsonMapper.encodeToString(MapAnySerializer, outbound),
@@ -587,7 +587,7 @@ internal class WebSocketCoreImpl(
 
     private suspend fun sendMessage(command: Command.WithAnswer): RawMessageSocketResponse? {
         if (!connect()) {
-            Timber.w("Unable to send message, not connected: ${command.request}")
+            Timber.w("Unable to send message, not connected: ${sensitive { command.request.toString() }}")
             return null
         }
 
@@ -597,7 +597,7 @@ internal class WebSocketCoreImpl(
         try {
             id = command.sendCompleted.await()
         } catch (e: HAWebSocketException) {
-            Timber.e(e, "Failed to send message ${command.request}")
+            Timber.e(e, "Failed to send message ${sensitive { command.request.toString() }}")
             return null
         }
 
@@ -795,7 +795,7 @@ internal class WebSocketCoreImpl(
                 wsScope.launch {
                     eventSubscriptionMutex.withLock {
                         findSubscription(subscribeMessage)?.let { (subscriptionId, subscription) ->
-                            Timber.d("Unsubscribing from $subscribeMessage")
+                            Timber.d("Unsubscribing from ${sensitive { subscribeMessage.toString() }}")
                             // Unsubscribe must happen before removing from activeMessages to ensure
                             // the server acknowledges before we stop handling events for this subscription
                             unsubscribeEvents(subscriptionId)
@@ -831,7 +831,7 @@ internal class WebSocketCoreImpl(
             ),
         )
         if (response == null || response.success != true) {
-            Timber.e("Unable to subscribe to $subscribeMessage")
+            Timber.e("Unable to subscribe to ${sensitive { subscribeMessage.toString() }}")
             findSubscription(subscribeMessage)?.let { (subscriptionId, _) -> activeMessages.remove(subscriptionId) }
             return null
         } else {
@@ -910,7 +910,8 @@ internal class WebSocketCoreImpl(
         if (activeMessage == null) {
             Timber.d("Received event for unknown subscription id= $subscriptionId, unsubscribing")
             subscriptionId?.let {
-                unsubscribeEvents(subscriptionId)
+                // Launch a new job to avoid stalling the inbound message queue
+                wsScope.launch { unsubscribeEvents(subscriptionId) }
             }
             return
         }
@@ -1205,7 +1206,9 @@ internal class WebSocketCoreImpl(
                     // connection open — a slow answer must not tear it down — and let the caller
                     // retry with backoff. Events the server accepted without the answer reaching
                     // us are routed to the original subscription anyway.
-                    Timber.e("No answer re-registering subscription with ${original.request}, retrying")
+                    Timber.e(
+                        "No answer re-registering subscription with ${sensitive { original.request.toString() }}, retrying",
+                    )
                     failed += oldId
                     failed += remaining
                     return failed
@@ -1214,7 +1217,9 @@ internal class WebSocketCoreImpl(
                 response.success != true -> {
                     response.id?.let { activeMessages.remove(it) }
                     failed += oldId
-                    Timber.e("Subscription ${original.request} rejected, retrying with backoff")
+                    Timber.e(
+                        "Subscription ${sensitive { original.request.toString() }} rejected, retrying with backoff",
+                    )
                 }
 
                 else -> {

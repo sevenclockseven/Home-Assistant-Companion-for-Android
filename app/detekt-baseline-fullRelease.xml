@@ -41,9 +41,9 @@
     <ID>CyclomaticComplexMethod:HealthConnectSensorManager.kt:HealthConnectSensorManager$override suspend fun requestSensorUpdate</ID>
     <ID>CyclomaticComplexMethod:HomeAssistantApplication.kt:HomeAssistantApplication$override fun onCreate</ID>
     <ID>CyclomaticComplexMethod:LocationSensorManager.kt:LocationSensorManager$private suspend fun handleGeoUpdate</ID>
+    <ID>CyclomaticComplexMethod:LocationSensorManager.kt:LocationSensorManager$private suspend fun refreshLocationTrackingSetup</ID>
     <ID>CyclomaticComplexMethod:LocationSensorManager.kt:LocationSensorManager$private suspend fun sendLocationUpdate</ID>
     <ID>CyclomaticComplexMethod:LocationSensorManager.kt:LocationSensorManager$private suspend fun setupBackgroundLocation</ID>
-    <ID>CyclomaticComplexMethod:LocationSensorManager.kt:LocationSensorManager$private suspend fun setupLocationTracking</ID>
     <ID>CyclomaticComplexMethod:LocationSensorManager.kt:LocationSensorManager$private suspend fun shouldEnableHighAccuracyMode: Boolean</ID>
     <ID>CyclomaticComplexMethod:LocationTrackingView.kt:@Composable fun LocationTrackingHistoryRow</ID>
     <ID>CyclomaticComplexMethod:ManageControlsView.kt:@Composable fun ManageControlsView</ID>
@@ -104,8 +104,7 @@
     <ID>InjectDispatcher:EntityPicker.kt:Default</ID>
     <ID>InjectDispatcher:FrontendDownloadManager.kt:FrontendDownloadManager$IO</ID>
     <ID>InjectDispatcher:FrontendEntityAddToManager.kt:FrontendEntityAddToManager$Default</ID>
-    <ID>InjectDispatcher:HaControlsProviderService.kt:HaControlsProviderService$IO</ID>
-    <ID>InjectDispatcher:HaControlsProviderService.kt:HaControlsProviderService.&lt;no name provided&gt;$IO</ID>
+    <ID>InjectDispatcher:HaMediaSession.kt:HaMediaSession$IO</ID>
     <ID>InjectDispatcher:HaShortcutManager.kt:HaShortcutManager$IO</ID>
     <ID>InjectDispatcher:HighAccuracyLocationReceiver.kt:HighAccuracyLocationReceiver$IO</ID>
     <ID>InjectDispatcher:HomeAssistantApplication.kt:HomeAssistantApplication$IO</ID>
@@ -368,8 +367,6 @@
     <ID>NestedBlockDepth:OnSwipeListener.kt:OnSwipeListener$override fun onTouch: Boolean</ID>
     <ID>NestedBlockDepth:ThreadManagerImpl.kt:ThreadManagerImpl$private suspend fun fullSyncPreferredDataset: ThreadManager.SyncResult</ID>
     <ID>NestedBlockDepth:TilePreferenceActivity.kt:TilePreferenceActivity$override fun onCreate</ID>
-    <ID>NoNameShadowing:EntityPickerFilter.kt:{ add(SearchField(it.lowercase(), FuzzySearchConfig.Weights.AREA_NAME)) }</ID>
-    <ID>NoNameShadowing:EntityPickerFilter.kt:{ add(SearchField(it.lowercase(), FuzzySearchConfig.Weights.DEVICE_NAME)) }</ID>
     <ID>NoNameShadowing:FrontendConnectionErrorScreen.kt:url</ID>
     <ID>NoNameShadowing:HAWebView.kt:modifier</ID>
     <ID>NoNameShadowing:ManageTilesViewModel.kt:ManageTilesViewModel$context</ID>
@@ -455,6 +452,9 @@
     <ID>TooManyFunctions:FakePlayer.kt:FakePlayer : Player</ID>
     <ID>TooManyFunctions:FrontendScreen.kt:io.homeassistant.companion.android.frontend.FrontendScreen.kt</ID>
     <ID>TooManyFunctions:FrontendViewModel.kt:FrontendViewModel : ViewModelFrontendConnectionErrorStateProvider</ID>
+    <ID>TooManyFunctions:HaMediaSession.kt:HaMediaSession</ID>
+    <ID>TooManyFunctions:HaRemoteMediaPlayer.kt:HaRemoteMediaPlayer : SimpleBasePlayer</ID>
+    <ID>TooManyFunctions:HaRemoteMediaPlayer.kt:HaRemoteMediaPlayer$CommandCallback</ID>
     <ID>TooManyFunctions:HealthConnectSensorManager.kt:HealthConnectSensorManager : SensorManager</ID>
     <ID>TooManyFunctions:LaunchViewModel.kt:LaunchViewModel : ViewModel</ID>
     <ID>TooManyFunctions:LocationSensorManager.kt:LocationSensorManager : SensorManager</ID>
@@ -537,7 +537,6 @@
     <ID>UnusedParameter:FrontendViewModel.kt:FrontendViewModel$url: String?</ID>
     <ID>UnusedParameter:ImprovPermission.kt:modifier: Modifier = Modifier</ID>
     <ID>UnusedParameter:QuestSensorManager.kt:QuestSensorManager$applicationContext: Context</ID>
-    <ID>UnusedPrivateProperty:ConnectionViewModel.kt:ConnectionViewModel$private val fileChooserManager: FileChooserManager</ID>
     <ID>UnusedPrivateProperty:HomeAssistantSearcher.kt:HomeAssistantSearcherImpl$private val nsdManager: NsdManager</ID>
     <ID>UnusedPrivateProperty:HomeAssistantSearcher.kt:HomeAssistantSearcherImpl$private val wifiManager: WifiManager?</ID>
     <ID>UnusedPrivateProperty:LaunchViewModel.kt:LaunchViewModel$private val prefsRepository: PrefsRepository</ID>

@@ -1,6 +1,5 @@
 package io.homeassistant.companion.android
 
-import android.annotation.SuppressLint
 import android.app.Application
 import android.app.NotificationManager
 import android.bluetooth.BluetoothAdapter
@@ -12,9 +11,7 @@ import android.net.wifi.WifiManager
 import android.nfc.NfcAdapter
 import android.os.Build
 import android.os.PowerManager
-import android.provider.Settings
 import android.telephony.TelephonyManager
-import android.webkit.WebView
 import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewCompat
 import coil3.ImageLoader
@@ -61,8 +58,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.UUID
 import okhttp3.OkHttpClient
 import timber.log.Timber
 
@@ -126,7 +121,7 @@ open class HomeAssistantApplication : Application() {
             val okHttpClient = okHttpClientProvider()
             networkClient.complete(okHttpClient.asNetworkClient())
 
-            configureWebViewDebugging(enabled = BuildConfig.DEBUG || prefsRepository.isWebViewDebugEnabled())
+            logWebViewPackage()
 
             languagesManager.applyCurrentLang()
             nightModeManager.applyCurrentNightMode()
@@ -389,35 +384,9 @@ open class HomeAssistantApplication : Application() {
         }
     }
 
-    @SuppressLint("HardwareIds")
-    open fun getDeviceId(context: Context): String {
-        var deviceId = Settings.Secure.getString(
-            applicationContext.contentResolver,
-            Settings.Secure.ANDROID_ID,
-        )
-        if (!deviceId.isNullOrEmpty()) {
-            return deviceId
-        }
-
-        val prefs = context.getSharedPreferences("config", Context.MODE_PRIVATE)
-        deviceId = prefs.getString("uuid", null)
-        if (deviceId.isNullOrEmpty()) {
-            deviceId = UUID.randomUUID().toString()
-            prefs.edit().putString("uuid", deviceId).apply()
-        }
-        return deviceId
-    }
-
-    /**
-     * Enables WebView contents debugging and logs the current WebView package.
-     *
-     * Runs on the main thread because [WebView.setWebContentsDebuggingEnabled] requires it in
-     * release builds.
-     */
-    private suspend fun configureWebViewDebugging(enabled: Boolean) = withContext(Dispatchers.Main) {
-        WebView.setWebContentsDebuggingEnabled(enabled)
+    private fun logWebViewPackage() {
         if (SdkVersion.isAtLeast(Build.VERSION_CODES.O)) {
-            val webviewPackage = WebViewCompat.getCurrentWebViewPackage(this@HomeAssistantApplication)
+            val webviewPackage = WebViewCompat.getCurrentWebViewPackage(this)
             Timber.d(
                 "Current webview package ${webviewPackage?.packageName} and version ${webviewPackage?.versionName}",
             )

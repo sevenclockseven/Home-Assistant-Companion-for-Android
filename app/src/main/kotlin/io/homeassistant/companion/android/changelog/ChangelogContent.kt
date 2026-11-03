@@ -3,6 +3,7 @@ package io.homeassistant.companion.android.changelog
 import io.homeassistant.companion.android.common.R as commonR
 import io.homeassistant.companion.android.frontend.navigation.WidgetType
 import io.homeassistant.companion.android.sensors.DynamicColorSensorManager
+import io.homeassistant.companion.android.sensors.HealthConnectSensorManager
 import io.homeassistant.companion.android.settings.SettingsActivity
 
 /**
@@ -24,6 +25,14 @@ internal val currentChangelog = Changelog(
             platforms = setOf(ChangelogPlatform.APP, ChangelogPlatform.AUTOMOTIVE),
         ),
         ChangelogEntry(
+            contentRes = commonR.string.changelog_entry_health_connect_sleep_stages,
+            platforms = setOf(ChangelogPlatform.APP),
+            action = ChangelogAction.OpenSettings(
+                SettingsActivity.Deeplink.Sensor(HealthConnectSensorManager.sleepDuration.id),
+            ),
+            actionRequiresPlatform = true,
+        ),
+        ChangelogEntry(
             contentRes = commonR.string.changelog_entry_gesture_action,
             platforms = setOf(ChangelogPlatform.APP, ChangelogPlatform.AUTOMOTIVE),
             action = ChangelogAction.OpenSettings(SettingsActivity.Deeplink.Gestures),
@@ -35,6 +44,15 @@ internal val currentChangelog = Changelog(
                 SettingsActivity.Deeplink.Sensor(DynamicColorSensorManager.tonalPaletteSensor.id),
             ),
             actionRequiresPlatform = true,
+        ),
+        ChangelogEntry(
+            contentRes = commonR.string.changelog_entry_native_media_controls,
+            platforms = setOf(ChangelogPlatform.APP),
+            action = ChangelogAction.OpenSettings(SettingsActivity.Deeplink.MediaControls),
+        ),
+        ChangelogEntry(
+            contentRes = commonR.string.changelog_entry_matter_share,
+            platforms = setOf(ChangelogPlatform.APP),
         ),
     ),
     improved = listOf(
@@ -79,6 +97,10 @@ internal val currentChangelog = Changelog(
         ChangelogEntry(
             contentRes = commonR.string.changelog_entry_chinese_sync,
             platforms = setOf(ChangelogPlatform.APP, ChangelogPlatform.AUTOMOTIVE, ChangelogPlatform.WEAR),
+        ),
+        ChangelogEntry(
+            contentRes = commonR.string.changelog_entry_file_picker,
+            platforms = setOf(ChangelogPlatform.APP, ChangelogPlatform.AUTOMOTIVE),
         ),
     ),
     fixed = listOf(
