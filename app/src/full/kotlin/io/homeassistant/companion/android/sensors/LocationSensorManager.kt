@@ -24,6 +24,12 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.edit
 import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.github.timoptr.mdiicons.Mdi
+import io.github.timoptr.mdiicons.generated.CrosshairsGps
+import io.github.timoptr.mdiicons.generated.Map
+import io.github.timoptr.mdiicons.generated.MapMarkerMultiple
+import io.github.timoptr.mdiicons.generated.MapMarkerRadius
+import io.github.timoptr.mdiicons.generated.Timer
 import io.homeassistant.companion.android.GCJ2WGS
 import io.homeassistant.companion.android.common.R as commonR
 import io.homeassistant.companion.android.common.bluetooth.BluetoothUtils
@@ -113,7 +119,7 @@ class LocationSensorManager @Inject constructor(
             "",
             commonR.string.basic_sensor_name_location_background,
             commonR.string.sensor_description_location_background,
-            "mdi:map-marker-multiple",
+            Mdi.MapMarkerMultiple,
             updateType = SensorManager.BasicSensor.UpdateType.LOCATION,
             settings = listOf(
                 Setting.Options(
@@ -136,7 +142,7 @@ class LocationSensorManager @Inject constructor(
             "",
             commonR.string.basic_sensor_name_location_zone,
             commonR.string.sensor_description_location_zone,
-            "mdi:map-marker-radius",
+            Mdi.MapMarkerRadius,
             updateType = SensorManager.BasicSensor.UpdateType.LOCATION,
             settings = listOf(
                 Setting.Number(SETTING_ACCURACY, DEFAULT_MINIMUM_ACCURACY),
@@ -148,7 +154,7 @@ class LocationSensorManager @Inject constructor(
             "",
             commonR.string.basic_sensor_name_location_accurate,
             commonR.string.sensor_description_location_accurate,
-            "mdi:crosshairs-gps",
+            Mdi.CrosshairsGps,
             updateType = SensorManager.BasicSensor.UpdateType.LOCATION,
             settings = listOf(
                 Setting.Number(SETTING_ACCURACY, DEFAULT_MINIMUM_ACCURACY),
@@ -163,7 +169,7 @@ class LocationSensorManager @Inject constructor(
             "binary_sensor",
             commonR.string.basic_sensor_name_high_accuracy_mode,
             commonR.string.sensor_description_high_accuracy_mode,
-            "mdi:crosshairs-gps",
+            Mdi.CrosshairsGps,
             entityCategory = SensorManager.ENTITY_CATEGORY_DIAGNOSTIC,
             updateType = SensorManager.BasicSensor.UpdateType.INTENT,
         )
@@ -174,7 +180,7 @@ class LocationSensorManager @Inject constructor(
             "sensor",
             commonR.string.basic_sensor_name_high_accuracy_interval,
             commonR.string.sensor_description_high_accuracy_interval,
-            "mdi:timer",
+            Mdi.Timer,
             unitOfMeasurement = "seconds",
             entityCategory = SensorManager.ENTITY_CATEGORY_DIAGNOSTIC,
             updateType = SensorManager.BasicSensor.UpdateType.INTENT,
@@ -844,7 +850,7 @@ class LocationSensorManager @Inject constructor(
         }
         onSensorUpdated(GeocodeSensorManager.geocodedLocation,
             mAddressLine,
-            "mdi:map",
+            Mdi.Map,
             mapOf(
                 "Latitude" to address.latitude,
                 "Longitude" to address.longitude,
